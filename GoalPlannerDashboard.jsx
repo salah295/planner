@@ -576,13 +576,21 @@ function GoalCard({ goal, onUpdate, onDelete }) {
                 >
                   {t.done && <Check className="w-3 h-3 text-slate-900" />}
                 </button>
-                <span
-                  className={`text-xs flex-1 ${
+                <input
+                  value={t.text}
+                  onChange={(e) =>
+                    onUpdate({
+                      ...goal,
+                      tasks: goal.tasks.map((task) =>
+                        task.id === t.id ? { ...task, text: e.target.value } : task
+                      ),
+                    })
+                  }
+                  aria-label={`Edit action step: ${t.text || "Untitled step"}`}
+                  className={`text-xs flex-1 bg-transparent border-0 outline-none focus:ring-1 focus:ring-emerald-400/60 rounded px-1 -mx-1 ${
                     t.done ? "text-slate-500 line-through" : "text-slate-200"
                   }`}
-                >
-                  {t.text}
-                </span>
+                />
                 <button
                   onClick={() => removeTask(t.id)}
                   className="opacity-0 group-hover:opacity-100 text-slate-600 hover:text-red-400 transition-opacity"
