@@ -1,29 +1,25 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
 (function(){
   "use strict";
 
-  /* Set these values from Supabase: Project Settings > API. */
-  var SUPABASE_URL = 'https://fnrohajvkclbxmobuxft.supabase.co';
-var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZucm9oYWp2a2NsYnhtb2J1eGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODczOTAwNjgsImV4cCI6MjEwMjk2NjA2OH0.j99U_vxMxB3Jvm0Z6IZsyAB7mKp0ZPXH37A2nLSl4VE';
-  var supabase = SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase
-    ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+  /* Replace these placeholders with Firebase console > Project settings values. */
+  var firebaseConfig = {
+    apiKey: 'YOUR_API_KEY',
+    authDomain: 'YOUR_PROJECT_ID.firebaseapp.com',
+    projectId: 'YOUR_PROJECT_ID',
+    storageBucket: 'YOUR_PROJECT_ID.appspot.com',
+    messagingSenderId: 'YOUR_SENDER_ID',
+    appId: 'YOUR_APP_ID'
+  };
+  var firebaseConfigured = firebaseConfig.apiKey !== 'YOUR_API_KEY' && firebaseConfig.projectId !== 'YOUR_PROJECT_ID';
+  var firebaseApp = firebaseConfigured ? initializeApp(firebaseConfig) : null;
+  var auth = firebaseApp ? getAuth(firebaseApp) : null;
+  var db = firebaseApp ? getFirestore(firebaseApp) : null;
+  var googleProvider = firebaseApp ? new GoogleAuthProvider() : null;
   var account = { user: null, signUp: false };
-
-
-
-  async function testConnection() {
-  const { data, error } = await supabase.from('tasks').select('*').limit(1);
-  if (error) {
-    console.error('Supabase connection error:', error.message);
-  } else {
-    console.log('Connected to Supabase successfully!', data);
-  }
-}
-
-testConnection();
-
-
-
-
 
 
 
@@ -128,10 +124,11 @@ testConnection();
       var payload = JSON.stringify({
         data: state.data, habitsList: state.habitsList, quotes: state.quotes, settings: state.settings
       });
-      if(supabase && account.user){
-        supabase.from('planner_data').upsert({user_id: account.user.id, payload: JSON.parse(payload), updated_at: new Date().toISOString()}).then(function(result){
-          if(result.error) showToast('Cloud save failed');
-        });
+      if(firebaseConfigured && account.user){
+        setDoc(doc(db, 'users', account.user.uid), {
+          plannerData: JSON.parse(payload),
+          updatedAt: new Date().toISOString()
+        }).catch(function(){ showToast('Cloud save failed'); });
         return;
       }
       if(window.storage){
@@ -142,9 +139,9 @@ testConnection();
   }
 
   function loadAll(){
-    if(supabase && account.user){
-      supabase.from('planner_data').select('payload').eq('user_id', account.user.id).maybeSingle().then(function(result){
-        if(result.data && result.data.payload) applyPayload(result.data.payload);
+    if(firebaseConfigured && account.user){
+      getDoc(doc(db, 'users', account.user.uid)).then(function(snapshot){
+        if(snapshot.exists() && snapshot.data().plannerData) applyPayload(snapshot.data().plannerData);
         applySettings(); render();
       }).catch(function(){ render(); });
       return;
@@ -234,7 +231,7 @@ testConnection();
     views.forEach(function(v){
       html += '<button class="navbtn '+(state.view===v[0]?'active':'')+'" data-nav="'+v[0]+'">'+v[1]+'</button>';
     });
-    if(supabase && account.user){
+    if(firebaseConfigured && account.user){
       html += '<div class="account-control"><span>'+esc(account.user.email || 'Account')+'</span><button id="signOutBtn" type="button">Sign out</button></div>';
     } else {
       html += '<button class="account-control account-link" id="authOpenBtn" type="button">Sign in</button>';
@@ -610,9 +607,9 @@ testConnection();
     var html = '<div class="wrap fade-in"><div class="settings-wrap">';
     html += sectionTitle('Settings');
 
-    html += '<div class="set-row"><div><div class="st">Account Sync</div><div class="st-sub">'+(supabase ? (account.user ? 'Signed in as '+esc(account.user.email || 'your account') : 'Sign in to sync across devices') : 'Add your Supabase URL and anon key in study-planner.js')+'</div></div>';
-    if(supabase && account.user) html += '<button class="ghost-btn" id="settingsSignOutBtn">Sign out</button>';
-    else if(supabase) html += '<button class="ghost-btn" id="settingsSignInBtn">Sign in</button>';
+    html += '<div class="set-row"><div><div class="st">Account Sync</div><div class="st-sub">'+(firebaseConfigured ? (account.user ? 'Signed in as '+esc(account.user.email || 'your account') : 'Sign in to sync across devices') : 'Add your Firebase configuration in study-planner.js')+'</div></div>';
+    if(firebaseConfigured && account.user) html += '<button class="ghost-btn" id="settingsSignOutBtn">Sign out</button>';
+    else if(firebaseConfigured) html += '<button class="ghost-btn" id="settingsSignInBtn">Sign in</button>';
     html += '</div>';
 
     html += '<div class="set-row"><div><div class="st">Accent Color</div><div class="st-sub">Choose the planner\'s highlight color</div></div>';
@@ -684,7 +681,7 @@ testConnection();
     if(authOpenBtn) authOpenBtn.addEventListener('click', openAuth);
     var signOutBtn = document.getElementById('signOutBtn');
     if(signOutBtn) signOutBtn.addEventListener('click', function(){
-      supabase.auth.signOut().then(function(){ account.user = null; showAuth(); });
+      signOut(auth).then(function(){ account.user = null; showAuth(); });
     });
 
     if(state.view === 'dashboard') attachDashboardEvents(app);
@@ -1007,7 +1004,7 @@ testConnection();
     if(settingsSignInBtn) settingsSignInBtn.addEventListener('click', openAuth);
     var settingsSignOutBtn = document.getElementById('settingsSignOutBtn');
     if(settingsSignOutBtn) settingsSignOutBtn.addEventListener('click', function(){
-      supabase.auth.signOut().then(function(){ account.user = null; showAuth(); });
+      signOut(auth).then(function(){ account.user = null; showAuth(); });
     });
     app.querySelectorAll('[data-accent]').forEach(function(b){
       b.addEventListener('click', function(){
@@ -1091,27 +1088,36 @@ testConnection();
   function attachAuthEvents(){
     var form = document.getElementById('authForm');
     var switchBtn = document.getElementById('authSwitch');
-    if(!form || !switchBtn) return;
+    var googleBtn = document.getElementById('googleAuthBtn');
+    if(!form || !switchBtn || !googleBtn) return;
     setAuthMode();
     switchBtn.addEventListener('click', function(){ account.signUp = !account.signUp; setAuthMode(); setAuthError(''); });
+    googleBtn.addEventListener('click', function(){
+      if(!firebaseConfigured){
+        setAuthError('Google sign-in is ready, but Firebase is not connected yet.');
+        return;
+      }
+      googleBtn.disabled = true;
+      signInWithPopup(auth, googleProvider).then(function(result){
+        account.user = result.user;
+        document.getElementById('authShell').hidden = true;
+        loadAll();
+      }).catch(function(error){ setAuthError(error.message || 'Google sign-in failed.'); })
+        .finally(function(){ googleBtn.disabled = false; });
+    });
     form.addEventListener('submit', function(e){
       e.preventDefault();
       setAuthError('');
-      if(!supabase){
-        setAuthError('Registration is ready, but cloud sync is not connected yet. Add your Supabase URL and anon key at the top of study-planner.js.');
+      if(!firebaseConfigured){
+        setAuthError('Registration is ready, but Firebase is not connected yet. Add your Firebase configuration at the top of study-planner.js.');
         return;
       }
       var email = document.getElementById('authEmail').value.trim();
       var password = document.getElementById('authPassword').value;
-      var action = account.signUp ? supabase.auth.signUp({email:email,password:password}) : supabase.auth.signInWithPassword({email:email,password:password});
+      var action = account.signUp ? createUserWithEmailAndPassword(auth, email, password) : signInWithEmailAndPassword(auth, email, password);
       document.getElementById('authSubmit').disabled = true;
       action.then(function(result){
-        if(result.error) throw result.error;
-        if(account.signUp && !result.data.session){
-          setAuthError('Check your email to confirm your account, then sign in.');
-          return;
-        }
-        account.user = result.data.user;
+        account.user = result.user;
         document.getElementById('authShell').hidden = true;
         loadAll();
       }).catch(function(error){ setAuthError(error.message || 'Authentication failed.'); })
@@ -1121,13 +1127,10 @@ testConnection();
 
   function boot(){
     attachAuthEvents();
-    if(!supabase){ render(); openAuth(); return; }
-    supabase.auth.getSession().then(function(result){
-      account.user = result.data.session ? result.data.session.user : null;
-      if(account.user) loadAll(); else { render(); openAuth(); }
-    }).catch(function(){ render(); });
-    supabase.auth.onAuthStateChange(function(event, session){
-      account.user = session ? session.user : null;
+    if(!firebaseConfigured){ render(); openAuth(); return; }
+    onAuthStateChanged(auth, function(user){
+      account.user = user;
+      if(user) loadAll(); else { render(); openAuth(); }
     });
   }
 
