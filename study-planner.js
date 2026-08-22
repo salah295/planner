@@ -74,7 +74,7 @@ import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/fireb
     quotes: DEFAULT_QUOTES.slice(),
     habitsList: DEFAULT_HABITS.slice(),
     data: {},          // plannerData keyed by date
-    settings: { accent: ACCENTS[0], fontSize: 'md' }
+    settings: { accent: ACCENTS[0], fontSize: 'md', theme: 'dark' }
   };
 
   function todayStr(){
@@ -138,7 +138,17 @@ import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/fireb
     }catch(e){}
   }
 
+  function resetPlannerData(){
+    state.data = {};
+    state.habitsList = DEFAULT_HABITS.slice();
+    state.quotes = DEFAULT_QUOTES.slice();
+    state.currentQuote = state.quotes[Math.floor(Math.random()*state.quotes.length)];
+    state.settings = { accent: ACCENTS[0], fontSize: 'md', theme: 'dark' };
+    applySettings();
+  }
+
   function loadAll(){
+    resetPlannerData();
     if(firebaseConfigured && account.user){
       getDoc(doc(db, 'users', account.user.uid)).then(function(snapshot){
         if(snapshot.exists() && snapshot.data().plannerData) applyPayload(snapshot.data().plannerData);
@@ -173,6 +183,8 @@ import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/fireb
   }
 
   function applySettings(){
+    var light = state.settings.theme === 'light';
+    document.documentElement.setAttribute('data-theme', light ? 'light' : 'dark');
     document.documentElement.style.setProperty('--accent', state.settings.accent || ACCENTS[0]);
     var sizes = {sm:'13.5px', md:'15px', lg:'16.5px'};
     document.documentElement.style.setProperty('--fs', sizes[state.settings.fontSize] || sizes.md);
@@ -257,12 +269,12 @@ import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/fireb
     html += '  <div class="hero-center">';
     html += '    <div class="script">study</div>';
     html += '    <div class="display">PLANNER</div>';
-    html += '    <div class="hero-divider"><span class="line"></span><span class="star">âœ¦</span><span class="line"></span></div>';
+    html += '    <div class="hero-divider"><span class="line"></span><span class="star">&#10022;</span><span class="line"></span></div>';
     html += '    <div class="tagline">Focus Today, Excel Tomorrow</div>';
     html += '  </div>';
     html += '  <div class="hero-right">';
     html += '    <div class="card date-card">';
-    html += '      <div class="label"><span>Date</span><span>âœ¦</span></div>';
+    html += '      <div class="label"><span>Date</span><span>&#10022;</span></div>';
     html += '      <input type="date" id="dateInput" value="'+state.selectedDate+'">';
     html += '    </div>';
     html += '    <div class="card mood-card">';
@@ -297,14 +309,14 @@ import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/fireb
     html += '<div class="section">';
     html += sectionTitle('Study Schedule');
     html += '<div class="card schedule-wrap">';
-    html += '<table class="sched"><thead><tr><th>Time</th><th>Subject / Topic</th><th>Task</th><th>âœ“</th><th></th></tr></thead><tbody>';
+    html += '<table class="sched"><thead><tr><th>Time</th><th>Subject / Topic</th><th>Task</th><th>&#10003;</th><th></th></tr></thead><tbody>';
     d.schedule.forEach(function(s){
       html += '<tr class="'+(s.done?'done':'')+'">';
       html += '<td class="time-col">'+esc(s.time)+'</td>';
       html += '<td><input type="text" placeholder="Subject" value="'+esc(s.subject)+'" data-sched-subject="'+s.id+'"></td>';
       html += '<td><input type="text" placeholder="Task" value="'+esc(s.task)+'" data-sched-task="'+s.id+'"></td>';
       html += '<td><div class="chk '+(s.done?'checked':'')+'" data-sched-check="'+s.id+'"></div></td>';
-      html += '<td><button class="rm-row" data-sched-remove="'+s.id+'">âœ•</button></td>';
+      html += '<td><button class="rm-row" data-sched-remove="'+s.id+'">&#10005;</button></td>';
       html += '</tr>';
     });
     html += '</tbody></table>';
@@ -332,10 +344,10 @@ import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/fireb
     if(filtered.length===0) html += '<div style="color:var(--text2);font-size:12.5px;padding:8px 2px;">No tasks here.</div>';
     filtered.forEach(function(t){
       html += '<div class="todo-item '+(t.done?'done':'')+'" draggable="true" data-todo-id="'+t.id+'">';
-      html += '<span class="drag-handle">â‹®â‹®</span>';
+      html += '<span class="drag-handle">&#8942;&#8942;</span>';
       html += '<div class="chk '+(t.done?'checked':'')+'" data-todo-check="'+t.id+'"></div>';
       html += '<span class="txt" contenteditable="true" data-todo-edit="'+t.id+'">'+esc(t.text)+'</span>';
-      html += '<button class="del-btn" data-todo-remove="'+t.id+'">âœ•</button>';
+      html += '<button class="del-btn" data-todo-remove="'+t.id+'">&#10005;</button>';
       html += '</div>';
     });
     html += '</div>';
@@ -349,7 +361,7 @@ import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/fireb
       html += '<div class="rem-item '+(r.done?'done':'')+'">';
       html += '<div class="chk '+(r.done?'checked':'')+'" data-rem-check="'+r.id+'"></div>';
       html += '<input type="text" value="'+esc(r.text)+'" data-rem-text="'+r.id+'">';
-      html += '<button class="del-btn" data-rem-remove="'+r.id+'">âœ•</button>';
+      html += '<button class="del-btn" data-rem-remove="'+r.id+'">&#10005;</button>';
       html += '</div>';
     });
     html += '<div class="add-line"><span>+</span><input type="text" id="remInput" placeholder="Add reminder..."></div>';
@@ -370,7 +382,7 @@ import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/fireb
       html += '<div class="goal-num">'+(i+1)+'</div>';
       html += '<input type="text" placeholder="Add a goal..." value="'+esc(g.text)+'" data-goal-text="'+g.id+'">';
       html += '<div class="chk '+(g.done?'checked':'')+'" data-goal-check="'+g.id+'"></div>';
-      html += '<button class="del-btn" data-goal-remove="'+g.id+'">âœ•</button>';
+      html += '<button class="del-btn" data-goal-remove="'+g.id+'">&#10005;</button>';
       html += '</div>';
     });
     html += '<div style="text-align:center;margin-top:10px;"><button class="ghost-btn" id="addGoal">+ Add Goal</button></div>';
@@ -391,7 +403,7 @@ import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/fireb
         totalCells++; if(on) onCells++;
         html += '<td><div class="habit-dot '+(on?'on':'')+'" data-habit-toggle="'+h+'|'+wd+'"></div></td>';
       });
-      html += '<td><button class="del-btn" data-habit-remove="'+esc(h)+'">âœ•</button></td>';
+      html += '<td><button class="del-btn" data-habit-remove="'+esc(h)+'">&#10005;</button></td>';
       html += '</tr>';
     });
     html += '</tbody></table>';
@@ -452,7 +464,7 @@ import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/fireb
     html += '</div>';
 
     html += '<div class="card gratitude-card">';
-    html += sectionTitle('Today I Am Grateful For â™¡');
+    html += sectionTitle('Today I Am Grateful For &#9825;');
     html += '<textarea id="gratitudeArea" placeholder="Write here...">'+esc(d.gratitude)+'</textarea>';
     html += '</div>';
     html += '</div>';
@@ -472,7 +484,7 @@ import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/fireb
   }
 
   function sectionTitle(t){
-    return '<div class="section-title"><span class="star">âœ¦</span>'+t+'<span class="star">âœ¦</span></div>';
+    return '<div class="section-title"><span class="star">&#10022;</span>'+t+'<span class="star">&#10022;</span></div>';
   }
 
   function weekDates(dateStr){
@@ -504,7 +516,7 @@ import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/fireb
     var daysInMonth = new Date(state.calYear, state.calMonth+1, 0).getDate();
     var prevDays = new Date(state.calYear, state.calMonth, 0).getDate();
 
-    html += '<div class="cal-head"><button id="calPrev">â€¹</button><div class="cal-title serif">'+MONTH_NAMES[state.calMonth]+' '+state.calYear+'</div><button id="calNext">â€º</button></div>';
+    html += '<div class="cal-head"><button id="calPrev">&#8249;</button><div class="cal-title serif">'+MONTH_NAMES[state.calMonth]+' '+state.calYear+'</div><button id="calNext">&#8250;</button></div>';
     html += '<div class="cal-grid">';
     DOW_FULL.forEach(function(d){ html += '<div class="dow">'+d[0]+'</div>'; });
 
@@ -612,6 +624,9 @@ import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/fireb
     else if(firebaseConfigured) html += '<button class="ghost-btn" id="settingsSignInBtn">Sign in</button>';
     html += '</div>';
 
+    html += '<div class="set-row"><div><div class="st">Theme</div><div class="st-sub">Switch between dark and light mode</div></div>';
+    html += '<button class="theme-btn" id="themeBtn" type="button"><span class="theme-icon">'+(state.settings.theme === 'light' ? '&#9790;' : '&#9788;')+'</span>'+(state.settings.theme === 'light' ? 'Light' : 'Dark')+'</button></div>';
+
     html += '<div class="set-row"><div><div class="st">Accent Color</div><div class="st-sub">Choose the planner\'s highlight color</div></div>';
     html += '<div class="swatches">';
     ACCENTS.forEach(function(c){
@@ -660,7 +675,7 @@ import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/fireb
       clearInterval(state.pomoInterval);
       state.pomoRunning = false;
       if(state.pomoMode === 'focus') state.pomoSessionsToday++;
-      showToast(state.pomoMode==='focus' ? 'Focus session complete âœ¦' : 'Break complete âœ¦');
+      showToast(state.pomoMode==='focus' ? 'Focus session complete *' : 'Break complete *');
       render();
     }
   }
@@ -681,7 +696,7 @@ import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/fireb
     if(authOpenBtn) authOpenBtn.addEventListener('click', openAuth);
     var signOutBtn = document.getElementById('signOutBtn');
     if(signOutBtn) signOutBtn.addEventListener('click', function(){
-      signOut(auth).then(function(){ account.user = null; showAuth(); });
+      signOut(auth).then(function(){ account.user = null; resetPlannerData(); showAuth(); });
     });
 
     if(state.view === 'dashboard') attachDashboardEvents(app);
@@ -1000,11 +1015,16 @@ import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/fireb
   }
 
   function attachSettingsEvents(app){
+    var themeBtn = document.getElementById('themeBtn');
+    if(themeBtn) themeBtn.addEventListener('click', function(){
+      state.settings.theme = state.settings.theme === 'light' ? 'dark' : 'light';
+      applySettings(); scheduleSave(); render();
+    });
     var settingsSignInBtn = document.getElementById('settingsSignInBtn');
     if(settingsSignInBtn) settingsSignInBtn.addEventListener('click', openAuth);
     var settingsSignOutBtn = document.getElementById('settingsSignOutBtn');
     if(settingsSignOutBtn) settingsSignOutBtn.addEventListener('click', function(){
-      signOut(auth).then(function(){ account.user = null; showAuth(); });
+      signOut(auth).then(function(){ account.user = null; resetPlannerData(); showAuth(); });
     });
     app.querySelectorAll('[data-accent]').forEach(function(b){
       b.addEventListener('click', function(){
@@ -1024,7 +1044,7 @@ import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/fireb
       if(q && q.trim()){
         state.quotes.push(q.trim());
         scheduleSave(); render();
-        showToast('Quote added âœ¦');
+        showToast('Quote added *');
       }
     });
     var exportBtn = document.getElementById('exportBtn');
@@ -1035,14 +1055,14 @@ import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/fireb
       a.href = url; a.download = 'study-planner-export.json';
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      showToast('Data exported âœ¦');
+      showToast('Data exported *');
     });
     var resetDayBtn = document.getElementById('resetDayBtn');
     if(resetDayBtn) resetDayBtn.addEventListener('click', function(){
       if(confirm('Reset all data for '+state.selectedDate+'?')){
         state.data[state.selectedDate] = emptyDay();
         scheduleSave(); render();
-        showToast('Day reset âœ¦');
+        showToast('Day reset *');
       }
     });
     var resetAllBtn = document.getElementById('resetAllBtn');
@@ -1051,7 +1071,7 @@ import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/fireb
         state.data = {};
         state.habitsList = DEFAULT_HABITS.slice();
         scheduleSave(); render();
-        showToast('All data reset âœ¦');
+        showToast('All data reset *');
       }
     });
   }
@@ -1130,7 +1150,7 @@ import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/fireb
     if(!firebaseConfigured){ render(); openAuth(); return; }
     onAuthStateChanged(auth, function(user){
       account.user = user;
-      if(user) loadAll(); else { render(); openAuth(); }
+      if(user) loadAll(); else { resetPlannerData(); render(); openAuth(); }
     });
   }
 
