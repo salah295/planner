@@ -1,6 +1,13 @@
 (function(){
   "use strict";
 
+  /* Set these values from Supabase: Project Settings > API. */
+  var SUPABASE_URL = '';
+  var SUPABASE_ANON_KEY = '';
+  var supabase = SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase
+    ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+  var account = { user: null, signUp: false };
+
   /* ================= constants ================= */
   var MOOD_ICONS = {
     happy: '<circle cx="12" cy="12" r="9" fill="none"/><path d="M8 10.5c.4-.4.9-.4 1.3 0M14.7 10.5c.4-.4.9-.4 1.3 0" stroke-linecap="round"/><path d="M8.3 14.5c1.2 1.4 6.2 1.4 7.4 0" fill="none" stroke-linecap="round"/>',
@@ -99,16 +106,30 @@
   }
   function doSave(){
     try{
+      var payload = JSON.stringify({
+        data: state.data, habitsList: state.habitsList, quotes: state.quotes, settings: state.settings
+      });
+      if(supabase && account.user){
+        supabase.from('planner_data').upsert({user_id: account.user.id, payload: JSON.parse(payload), updated_at: new Date().toISOString()}).then(function(result){
+          if(result.error) showToast('Cloud save failed');
+        });
+        return;
+      }
       if(window.storage){
         window.storage.set('plannerData', JSON.stringify(state.data), false).catch(function(){});
-        window.storage.set('plannerMeta', JSON.stringify({
-          habitsList: state.habitsList, quotes: state.quotes, settings: state.settings
-        }), false).catch(function(){});
+        window.storage.set('plannerMeta', payload, false).catch(function(){});
       }
     }catch(e){}
   }
 
   function loadAll(){
+    if(supabase && account.user){
+      supabase.from('planner_data').select('payload').eq('user_id', account.user.id).maybeSingle().then(function(result){
+        if(result.data && result.data.payload) applyPayload(result.data.payload);
+        applySettings(); render();
+      }).catch(function(){ render(); });
+      return;
+    }
     if(!window.storage){ render(); return; }
     Promise.all([
       window.storage.get('plannerData', false).catch(function(){ return null; }),
@@ -120,14 +141,19 @@
       try{
         if(results[1] && results[1].value){
           var meta = JSON.parse(results[1].value);
-          if(meta.habitsList) state.habitsList = meta.habitsList;
-          if(meta.quotes) state.quotes = meta.quotes;
-          if(meta.settings) state.settings = meta.settings;
+          applyPayload(meta);
         }
       }catch(e){}
       applySettings();
       render();
     }).catch(function(){ render(); });
+  }
+
+  function applyPayload(payload){
+    if(payload.data) state.data = payload.data;
+    if(payload.habitsList) state.habitsList = payload.habitsList;
+    if(payload.quotes) state.quotes = payload.quotes;
+    if(payload.settings) state.settings = payload.settings;
   }
 
   function applySettings(){
@@ -189,6 +215,11 @@
     views.forEach(function(v){
       html += '<button class="navbtn '+(state.view===v[0]?'active':'')+'" data-nav="'+v[0]+'">'+v[1]+'</button>';
     });
+    if(supabase && account.user){
+      html += '<div class="account-control"><span>'+esc(account.user.email || 'Account')+'</span><button id="signOutBtn" type="button">Sign out</button></div>';
+    } else if(supabase){
+      html += '<button class="account-control account-link" id="authOpenBtn" type="button">Sign in</button>';
+    }
     html += '</div>';
     return html;
   }
@@ -560,6 +591,11 @@
     var html = '<div class="wrap fade-in"><div class="settings-wrap">';
     html += sectionTitle('Settings');
 
+    html += '<div class="set-row"><div><div class="st">Account Sync</div><div class="st-sub">'+(supabase ? (account.user ? 'Signed in as '+esc(account.user.email || 'your account') : 'Sign in to sync across devices') : 'Add your Supabase URL and anon key in study-planner.js')+'</div></div>';
+    if(supabase && account.user) html += '<button class="ghost-btn" id="settingsSignOutBtn">Sign out</button>';
+    else if(supabase) html += '<button class="ghost-btn" id="settingsSignInBtn">Sign in</button>';
+    html += '</div>';
+
     html += '<div class="set-row"><div><div class="st">Accent Color</div><div class="st-sub">Choose the planner\'s highlight color</div></div>';
     html += '<div class="swatches">';
     ACCENTS.forEach(function(c){
@@ -623,6 +659,13 @@
         state.view = b.getAttribute('data-nav');
         render();
       });
+    });
+
+    var authOpenBtn = document.getElementById('authOpenBtn');
+    if(authOpenBtn) authOpenBtn.addEventListener('click', openAuth);
+    var signOutBtn = document.getElementById('signOutBtn');
+    if(signOutBtn) signOutBtn.addEventListener('click', function(){
+      supabase.auth.signOut().then(function(){ account.user = null; showAuth(); });
     });
 
     if(state.view === 'dashboard') attachDashboardEvents(app);
@@ -941,6 +984,12 @@
   }
 
   function attachSettingsEvents(app){
+    var settingsSignInBtn = document.getElementById('settingsSignInBtn');
+    if(settingsSignInBtn) settingsSignInBtn.addEventListener('click', openAuth);
+    var settingsSignOutBtn = document.getElementById('settingsSignOutBtn');
+    if(settingsSignOutBtn) settingsSignOutBtn.addEventListener('click', function(){
+      supabase.auth.signOut().then(function(){ account.user = null; showAuth(); });
+    });
     app.querySelectorAll('[data-accent]').forEach(function(b){
       b.addEventListener('click', function(){
         state.settings.accent = b.getAttribute('data-accent');
@@ -991,6 +1040,74 @@
     });
   }
 
+  function openAuth(){
+    var shell = document.getElementById('authShell');
+    if(shell) shell.hidden = false;
+  }
+
+  function showAuth(){
+    account.signUp = false;
+    setAuthMode();
+    openAuth();
+    render();
+  }
+
+  function setAuthMode(){
+    var title = document.getElementById('authTitle');
+    var subtitle = document.getElementById('authSubtitle');
+    var submit = document.getElementById('authSubmit');
+    var switchBtn = document.getElementById('authSwitch');
+    if(!title) return;
+    title.textContent = account.signUp ? 'Make room for your plans.' : 'Your plans, anywhere.';
+    subtitle.textContent = account.signUp ? 'Create an account to sync your planner across devices.' : 'Sign in to access your planner on any device.';
+    submit.textContent = account.signUp ? 'Create account' : 'Sign in';
+    switchBtn.textContent = account.signUp ? 'Already have an account? Sign in' : 'Need an account? Sign up';
+  }
+
+  function setAuthError(message){
+    var error = document.getElementById('authError');
+    if(error) error.textContent = message || '';
+  }
+
+  function attachAuthEvents(){
+    var form = document.getElementById('authForm');
+    var switchBtn = document.getElementById('authSwitch');
+    if(!form || !switchBtn) return;
+    setAuthMode();
+    switchBtn.addEventListener('click', function(){ account.signUp = !account.signUp; setAuthMode(); setAuthError(''); });
+    form.addEventListener('submit', function(e){
+      e.preventDefault();
+      setAuthError('');
+      var email = document.getElementById('authEmail').value.trim();
+      var password = document.getElementById('authPassword').value;
+      var action = account.signUp ? supabase.auth.signUp({email:email,password:password}) : supabase.auth.signInWithPassword({email:email,password:password});
+      document.getElementById('authSubmit').disabled = true;
+      action.then(function(result){
+        if(result.error) throw result.error;
+        if(account.signUp && !result.data.session){
+          setAuthError('Check your email to confirm your account, then sign in.');
+          return;
+        }
+        account.user = result.data.user;
+        document.getElementById('authShell').hidden = true;
+        loadAll();
+      }).catch(function(error){ setAuthError(error.message || 'Authentication failed.'); })
+        .finally(function(){ document.getElementById('authSubmit').disabled = false; });
+    });
+  }
+
+  function boot(){
+    attachAuthEvents();
+    if(!supabase){ render(); return; }
+    supabase.auth.getSession().then(function(result){
+      account.user = result.data.session ? result.data.session.user : null;
+      if(account.user) loadAll(); else { render(); openAuth(); }
+    }).catch(function(){ render(); });
+    supabase.auth.onAuthStateChange(function(event, session){
+      account.user = session ? session.user : null;
+    });
+  }
+
   /* ================= init ================= */
-  loadAll();
+  boot();
 })();
