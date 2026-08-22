@@ -317,6 +317,9 @@
   .auth-submit{width:100%;margin-top:22px;padding:12px;border:1px solid var(--accent);color:var(--accent);font-size:11px;letter-spacing:.14em;text-transform:uppercase;}
   .auth-submit:hover{background:var(--accent-soft);}
   .auth-submit:disabled{opacity:.5;cursor:wait;}
+  .auth-google{width:100%;margin-top:10px;padding:11px;border:1px solid var(--border);color:var(--text2);font-size:11px;letter-spacing:.1em;text-transform:uppercase;}
+  .auth-google:hover{border-color:var(--text);color:var(--text);}
+  .auth-google:disabled{opacity:.5;cursor:wait;}
   .auth-switch{display:block;margin:18px auto 0;color:var(--text2);font-size:11px;text-decoration:underline;text-underline-offset:3px;}
   .auth-error{min-height:18px;color:#c98686;font-size:12px;line-height:1.5;margin:16px 0 0;text-align:center;}
   @media(max-width:600px){.account-control{margin-left:0;}.topnav{gap:5px;}.auth-card{padding:26px;}}
