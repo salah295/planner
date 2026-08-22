@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   PieChart,
@@ -732,9 +732,13 @@ function NewGoalModal({ onClose, onCreate }) {
    MAIN APP
 ----------------------------------------------------------- */
 
-export default function GoalPlannerDashboard() {
-  const [goals, setGoals] = useState(initialGoals);
+export default function GoalPlannerDashboard({ savedGoals, onGoalsChange }) {
+  const [goals, setGoals] = useState(savedGoals || initialGoals);
   const [showModal, setShowModal] = useState(false);
+
+  useEffect(() => {
+    if (onGoalsChange) onGoalsChange(goals);
+  }, [goals, onGoalsChange]);
 
   const updateGoal = useCallback((updated) => {
     setGoals((prev) => prev.map((g) => (g.id === updated.id ? updated : g)));
