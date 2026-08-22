@@ -128,7 +128,7 @@ import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/fireb
         setDoc(doc(db, 'users', account.user.uid), {
           plannerData: JSON.parse(payload),
           updatedAt: new Date().toISOString()
-        }).catch(function(){ showToast('Cloud save failed'); });
+        }, {merge: true}).catch(function(){ showToast('Cloud save failed'); });
         return;
       }
       if(window.storage){
