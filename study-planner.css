@@ -51,6 +51,10 @@
     border-bottom:1px solid var(--border-soft);
     flex-wrap:wrap;
   }
+  .account-control{margin-left:12px;padding:7px 12px;border:1px solid var(--border);border-radius:20px;font-size:10px;letter-spacing:.08em;color:var(--text2);display:flex;align-items:center;gap:10px;max-width:260px;}
+  .account-control span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .account-control button{font-size:10px;color:var(--accent);white-space:nowrap;padding:0;}
+  .account-link{color:var(--accent);}
   .navbtn{
     padding:8px 18px;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;
     color:var(--text2);border:1px solid transparent;border-radius:20px;transition:all .25s ease;
@@ -300,3 +304,19 @@
     letter-spacing:0.05em;
   }
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  .auth-shell{position:fixed;inset:0;z-index:200;background:rgba(5,5,5,.94);display:flex;align-items:center;justify-content:center;padding:20px;}
+  .auth-shell[hidden]{display:none;}
+  .auth-card{width:min(100%,410px);padding:34px;background:var(--bg2);border:1px solid var(--border);box-shadow:0 24px 80px rgba(0,0,0,.45);}
+  .auth-kicker{font-size:10px;letter-spacing:.25em;text-transform:uppercase;color:var(--accent);margin-bottom:18px;}
+  .auth-card h1{font-family:'Playfair Display',serif;font-weight:400;font-size:30px;margin:0 0 9px;}
+  .auth-subtitle{color:var(--text2);font-size:13px;line-height:1.6;margin:0 0 25px;}
+  .auth-label{display:block;color:var(--text2);font-size:10px;letter-spacing:.15em;text-transform:uppercase;margin:15px 0 7px;}
+  .auth-input{width:100%;border:1px solid var(--border);padding:11px 12px;font-size:14px;background:rgba(255,255,255,.025);}
+  .auth-input:focus{border-color:var(--accent);}
+  .auth-submit{width:100%;margin-top:22px;padding:12px;border:1px solid var(--accent);color:var(--accent);font-size:11px;letter-spacing:.14em;text-transform:uppercase;}
+  .auth-submit:hover{background:var(--accent-soft);}
+  .auth-submit:disabled{opacity:.5;cursor:wait;}
+  .auth-switch{display:block;margin:18px auto 0;color:var(--text2);font-size:11px;text-decoration:underline;text-underline-offset:3px;}
+  .auth-error{min-height:18px;color:#c98686;font-size:12px;line-height:1.5;margin:16px 0 0;text-align:center;}
+  @media(max-width:600px){.account-control{margin-left:0;}.topnav{gap:5px;}.auth-card{padding:26px;}}
