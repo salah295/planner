@@ -70,6 +70,7 @@
   .account-control span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .account-control button{font-size:10px;color:var(--accent);white-space:nowrap;padding:0;}
   .account-link{color:var(--accent);}
+  .goals-link{text-decoration:none;}
   .navbtn{
     padding:8px 18px;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;
     color:var(--text2);border:1px solid transparent;border-radius:20px;transition:all .25s ease;
