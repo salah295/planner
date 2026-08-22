@@ -11,6 +11,16 @@
     --radius:2px;
     --fs:15px;
   }
+  :root[data-theme="light"]{
+    --bg:#f3f0eb;
+    --bg2:#fffdf9;
+    --bg3:#ebe6df;
+    --border:rgba(45,40,34,0.18);
+    --border-soft:rgba(45,40,34,0.1);
+    --text:#2d2822;
+    --text2:#716a61;
+    --accent-soft:rgba(151,111,55,0.14);
+  }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-size:var(--fs);}
   #app{min-height:100vh;background:
@@ -39,8 +49,13 @@
     *{animation:none !important;transition:none !important;}
   }
   button{font-family:inherit;cursor:pointer;background:none;border:none;color:inherit;}
-  input,textarea{font-family:inherit;background:transparent;border:none;color:var(--text);outline:none;}
+  input,textarea,[contenteditable="true"]{font-family:inherit;background:transparent;border:none;color:var(--text);-webkit-text-fill-color:var(--text);outline:none;}
+  input:-webkit-autofill,input:-webkit-autofill:hover,input:-webkit-autofill:focus{ -webkit-text-fill-color:var(--text); transition:background-color 9999s ease-in-out 0s; }
   input::placeholder,textarea::placeholder{color:var(--text2);opacity:0.6;}
+  :root[data-theme="light"] #app{background:
+    radial-gradient(ellipse 900px 500px at 15% -5%, rgba(201,184,150,0.2), transparent 60%),
+    radial-gradient(ellipse 900px 500px at 90% 0%, rgba(255,255,255,0.8), transparent 60%),
+    var(--bg);}
 
   /* ---------- Top nav ---------- */
   .topnav{
@@ -294,6 +309,9 @@
   .fs-btns{display:flex;gap:6px;}
   .fs-btn{border:1px solid var(--border);padding:4px 10px;border-radius:14px;font-size:11px;color:var(--text2);}
   .fs-btn.active{color:var(--accent);border-color:var(--accent);}
+  .theme-btn{display:flex;align-items:center;gap:8px;border:1px solid var(--border);padding:7px 12px;border-radius:20px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text2);}
+  .theme-btn:hover{color:var(--accent);border-color:var(--accent);}
+  .theme-icon{font-size:15px;line-height:1;}
   .danger-btn{border:1px solid rgba(200,120,120,0.4);color:#c98686;padding:8px 16px;border-radius:20px;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;}
   .danger-btn:hover{background:rgba(200,120,120,0.1);}
 
