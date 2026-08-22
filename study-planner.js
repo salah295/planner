@@ -243,6 +243,7 @@ import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/fireb
     views.forEach(function(v){
       html += '<button class="navbtn '+(state.view===v[0]?'active':'')+'" data-nav="'+v[0]+'">'+v[1]+'</button>';
     });
+    html += '<a class="navbtn goals-link" href="goals.html">Goals</a>';
     if(firebaseConfigured && account.user){
       html += '<div class="account-control"><span>'+esc(account.user.email || 'Account')+'</span><button id="signOutBtn" type="button">Sign out</button></div>';
     } else {
