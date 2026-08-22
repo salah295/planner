@@ -7,19 +7,19 @@ import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/fireb
 
   /* Replace these placeholders with Firebase console > Project settings values. */
   var firebaseConfig = {
-    apiKey: 'YOUR_API_KEY',
-    authDomain: 'YOUR_PROJECT_ID.firebaseapp.com',
-    projectId: 'YOUR_PROJECT_ID',
-    storageBucket: 'YOUR_PROJECT_ID.appspot.com',
-    messagingSenderId: 'YOUR_SENDER_ID',
-    appId: 'YOUR_APP_ID'
-  };
+    apiKey: "AIzaSyDDWJQhY6lU7sFKU-BTkyfYuU70ZNlDiaU",
+  authDomain: "study-planner-f2eff.firebaseapp.com",
+  projectId: "study-planner-f2eff",
+  storageBucket: "study-planner-f2eff.firebasestorage.app",
+  messagingSenderId: "606153882384",
+  appId: "1:606153882384:web:e7cda618ceebb970430395"
+};
   var firebaseConfigured = firebaseConfig.apiKey !== 'YOUR_API_KEY' && firebaseConfig.projectId !== 'YOUR_PROJECT_ID';
   var firebaseApp = firebaseConfigured ? initializeApp(firebaseConfig) : null;
   var auth = firebaseApp ? getAuth(firebaseApp) : null;
   var db = firebaseApp ? getFirestore(firebaseApp) : null;
   var googleProvider = firebaseApp ? new GoogleAuthProvider() : null;
-  var account = { user: null, signUp: false };
+  var account = { user: null, signUp: true };
 
 
 
@@ -1062,7 +1062,7 @@ import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/fireb
   }
 
   function showAuth(){
-    account.signUp = false;
+    account.signUp = true;
     setAuthMode();
     openAuth();
     render();
