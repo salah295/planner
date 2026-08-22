@@ -2,11 +2,30 @@
   "use strict";
 
   /* Set these values from Supabase: Project Settings > API. */
-  var SUPABASE_URL = '';
-  var SUPABASE_ANON_KEY = '';
+  var SUPABASE_URL = 'https://fnrohajvkclbxmobuxft.supabase.co';
+var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZucm9oYWp2a2NsYnhtb2J1eGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODczOTAwNjgsImV4cCI6MjEwMjk2NjA2OH0.j99U_vxMxB3Jvm0Z6IZsyAB7mKp0ZPXH37A2nLSl4VE';
   var supabase = SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase
     ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
   var account = { user: null, signUp: false };
+
+
+
+  async function testConnection() {
+  const { data, error } = await supabase.from('tasks').select('*').limit(1);
+  if (error) {
+    console.error('Supabase connection error:', error.message);
+  } else {
+    console.log('Connected to Supabase successfully!', data);
+  }
+}
+
+testConnection();
+
+
+
+
+
+
 
   /* ================= constants ================= */
   var MOOD_ICONS = {
