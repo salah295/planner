@@ -17,6 +17,116 @@ body {
   min-height: 100vh;
 }
 
+.goals-back {
+  position: fixed;
+  top: 1rem;
+  right: 6rem;
+  z-index: 80;
+  padding: .45rem .7rem;
+  color: #cbd5e1;
+  background: #1e293b;
+  border: 1px solid #475569;
+  border-radius: .45rem;
+  font-size: 12px;
+  text-decoration: none;
+}
+
+.goals-back:hover {
+  color: #34d399;
+  border-color: #34d399;
+}
+
+.goals-auth {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  background: rgba(15, 23, 42, 0.94);
+}
+
+.goals-auth[hidden] {
+  display: none;
+}
+
+.goals-auth-card {
+  width: min(100%, 25rem);
+  padding: 2rem;
+  background: #1e293b;
+  border: 1px solid #475569;
+  border-radius: 1rem;
+  box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.35);
+}
+
+.goals-auth-kicker {
+  margin: 0 0 1rem;
+  color: #34d399;
+  font-size: .7rem;
+  font-weight: 700;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+
+.goals-auth-card h1 {
+  margin: 0;
+  color: #f8fafc;
+  font-size: 1.5rem;
+  line-height: 1.25;
+}
+
+.goals-auth-card p:not(.goals-auth-kicker):not(.goals-auth-error) {
+  color: #94a3b8;
+  font-size: .85rem;
+  line-height: 1.5;
+}
+
+#goalsAuthForm {
+  display: grid;
+  gap: .75rem;
+  margin-top: 1.25rem;
+}
+
+#goalsAuthForm input {
+  width: 100%;
+  padding: .7rem .8rem;
+  color: #f8fafc;
+  background: #0f172a;
+  border: 1px solid #475569;
+  border-radius: .45rem;
+  outline: none;
+}
+
+#goalsAuthForm input:focus {
+  border-color: #34d399;
+}
+
+#goalsAuthSubmit {
+  padding: .7rem;
+  color: #052e2b;
+  background: #34d399;
+  border-radius: .45rem;
+  font-size: .85rem;
+  font-weight: 700;
+}
+
+#goalsAuthSwitch {
+  display: block;
+  margin: 1rem auto 0;
+  color: #94a3b8;
+  font-size: .75rem;
+  text-decoration: underline;
+}
+
+.goals-auth-error {
+  min-height: 1.25rem;
+  margin: 1rem 0 0;
+  color: #fca5a5;
+  font-size: .75rem;
+  line-height: 1.4;
+}
+
 button,
 input,
 textarea,
