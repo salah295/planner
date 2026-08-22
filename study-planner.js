@@ -217,7 +217,7 @@
     });
     if(supabase && account.user){
       html += '<div class="account-control"><span>'+esc(account.user.email || 'Account')+'</span><button id="signOutBtn" type="button">Sign out</button></div>';
-    } else if(supabase){
+    } else {
       html += '<button class="account-control account-link" id="authOpenBtn" type="button">Sign in</button>';
     }
     html += '</div>';
@@ -1078,6 +1078,10 @@
     form.addEventListener('submit', function(e){
       e.preventDefault();
       setAuthError('');
+      if(!supabase){
+        setAuthError('Registration is ready, but cloud sync is not connected yet. Add your Supabase URL and anon key at the top of study-planner.js.');
+        return;
+      }
       var email = document.getElementById('authEmail').value.trim();
       var password = document.getElementById('authPassword').value;
       var action = account.signUp ? supabase.auth.signUp({email:email,password:password}) : supabase.auth.signInWithPassword({email:email,password:password});
@@ -1098,7 +1102,7 @@
 
   function boot(){
     attachAuthEvents();
-    if(!supabase){ render(); return; }
+    if(!supabase){ render(); openAuth(); return; }
     supabase.auth.getSession().then(function(result){
       account.user = result.data.session ? result.data.session.user : null;
       if(account.user) loadAll(); else { render(); openAuth(); }
