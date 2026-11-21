@@ -7,6 +7,7 @@
 <title>Life Planner</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Caveat:wght@600&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{color-scheme:dark;--bg:#080a0f;--card:#0f1219;--card2:#141823;--line:#1e2432;--ink:#e9ecf3;--mute:#8791a3;--acc:#4f46e5;--ok:#22c55e;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 html{scroll-padding-top:calc(64px + env(safe-area-inset-top,0px));scroll-behavior:smooth}
@@ -54,6 +55,8 @@ details>summary{list-style:none;cursor:pointer;min-height:44px;display:flex;alig
 input,select{width:100%;min-height:48px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:16px Inter,sans-serif}
 label{display:block;font-size:13px;font-weight:600;margin:12px 0 4px}
 #toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(80px + env(safe-area-inset-bottom,0px));background:#e9ecf3;color:#0b0d12;padding:10px 16px;border-radius:10px;font-weight:600;z-index:80;display:none}
+.auth-panel{width:min(420px,calc(100% - 32px));padding:24px;border-radius:16px}
+.auth-panel input{margin-bottom:10px}
 @media(max-width:767px){
  body .sec{display:none}
  body[data-v=home] :is(.hero,.cards,.tasks,.upc),body[data-v=tasks] .tasks,body[data-v=cal] .cal,body[data-v=habits] .hab,body[data-v=more] :is(.mus,.not,.upc,.ban){display:block}
@@ -73,10 +76,12 @@ label{display:block;font-size:13px;font-weight:600;margin:12px 0 4px}
     <svg class="mt" viewBox="0 0 800 200" preserveAspectRatio="xMidYMax slice" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#56637c"/><stop offset="1" stop-color="#0f1219"/></linearGradient></defs><path d="M0 200V150l90-40 70 30 110-80 90 60 100-70 120 90 80-50 140 70v40z" fill="url(#g)"/><path d="M270 60l20 20-20 10-18-12zM460 70l22 22-24 6-12-14z" fill="#e8d9d0" opacity=".45"/></svg>
     <div class="flex flex-col gap-3">
       <div class="w-11 h-11 rounded-xl border-2 border-white grid place-items-center text-2xl font-bold bg-black">L</div>
-      <h1 class="text-3xl md:text-5xl font-bold tracking-tight">Life Planner</h1>
-      <p class="mute text-xs md:text-sm">Plan Better &nbsp;·&nbsp; Do More &nbsp;·&nbsp; Live Greater</p>
+      <button class="text-left" data-a="edit-hero" aria-label="Edit hero">
+        <h1 class="text-3xl md:text-5xl font-bold tracking-tight" id="heroTitle">Life Planner</h1>
+        <p class="mute text-xs md:text-sm" id="heroTagline">Plan Better &nbsp;·&nbsp; Do More &nbsp;·&nbsp; Live Greater</p>
+      </button>
     </div>
-    <p class="hidden md:block max-w-[220px] text-right mute text-lg" style="letter-spacing:.04em">A little progress each day adds up to big results.</p>
+    <button class="hidden md:block max-w-[220px] text-right mute text-lg bg-transparent border-0" style="letter-spacing:.04em" data-a="edit-hero" id="heroQuote">A little progress each day adds up to big results.</button>
   </section>
 
   <section class="sec cards"><div class="grid grid-cols-2 lg:grid-cols-4 gap-3" id="cards"></div></section>
@@ -88,12 +93,12 @@ label{display:block;font-size:13px;font-weight:600;margin:12px 0 4px}
       <section class="sec ban card flex items-center gap-4 overflow-hidden" style="background:linear-gradient(100deg,#1a2133,#0f1219)"><div class="w-24 h-16 md:w-32 md:h-20 shrink-0" style="background:linear-gradient(#364158,#0f1219)"><svg viewBox="0 0 120 70" class="w-full h-full" aria-hidden="true"><path d="M0 70V45l25-20 18 14 25-28 30 36 22-12v35z" fill="#56637c"/></svg></div><div class="py-3 pr-3"><h3 class="font-semibold">Better Planning.<br>A Brighter Future.</h3><p class="mute text-xs mt-1">Your life. Your plan. Your rules.</p></div></section>
     </div>
     <aside class="grid gap-4 md:grid-cols-2 lg:grid-cols-1 items-start min-w-0 max-md:contents">
-      <details open class="sec card mus p-4"><summary><h3 class="font-semibold">♫ Now Playing</h3><span class="mute">▾</span></summary>
-        <div class="flex gap-3 items-center mt-2"><div class="w-16 h-16 rounded-lg shrink-0" style="background:linear-gradient(160deg,#5b6a88,#1a2030)"></div><div class="min-w-0"><div class="font-bold">Better Days</div><div class="mute text-sm">NEFFEX</div></div></div>
-        <div class="h-1 rounded bg-[#262c3b] mt-4"><div class="h-1 rounded bg-white w-[44%]"></div></div><div class="flex justify-between text-xs mute mt-1"><span>1:42</span><span>3:20</span></div>
+      <details open class="sec card mus p-4"><summary><h3 class="font-semibold">♫ Now Playing</h3><div class="flex items-center gap-1"><button class="btn g" data-a="edit-music" aria-label="Edit now playing">✎</button><span class="mute">▾</span></div></summary>
+        <div class="flex gap-3 items-center mt-2"><div class="w-16 h-16 rounded-lg shrink-0" style="background:linear-gradient(160deg,#5b6a88,#1a2030)"></div><div class="min-w-0"><div class="font-bold" id="musicTitle">Better Days</div><div class="mute text-sm" id="musicArtist">NEFFEX</div></div></div>
+        <div class="h-1 rounded bg-[#262c3b] mt-4"><div class="h-1 rounded bg-white w-[44%]"></div></div><div class="flex justify-between text-xs mute mt-1"><span id="musicElapsed">1:42</span><span id="musicDuration">3:20</span></div>
         <div class="flex items-center justify-center gap-2 mt-1"><button class="btn g" aria-label="Previous">⏮</button><button class="btn" id="play" style="width:52px;height:52px;border-radius:99px;background:#fff;color:#000;border:0" aria-label="Play">▶</button><button class="btn g" aria-label="Next">⏭</button></div></details>
-      <details open class="sec card not p-4"><summary><h3 class="font-semibold">▤ Quick Notes</h3><span class="mute">▾</span></summary>
-        <ul class="m-0 pl-5 mt-1 grid gap-1"><li>Be consistent.</li><li>Small steps create big changes.</li><li>Focus on what matters.</li><li>You got this! 💪</li></ul></details>
+      <details open class="sec card not p-4"><summary><h3 class="font-semibold">▤ Quick Notes</h3><div class="flex items-center gap-1"><button class="btn g" data-a="edit-notes" aria-label="Edit quick notes">✎</button><span class="mute">▾</span></div></summary>
+        <ul class="m-0 pl-5 mt-1 grid gap-1" id="quickNotes"></ul></details>
       <section class="sec card hab p-4" id="hab"></section>
       <details open class="sec card upc p-4"><summary><h3 class="font-semibold">▦ Upcoming</h3><span class="mute">▾</span></summary><div id="upc"></div></details>
       <section class="sec ban card hidden lg:flex items-center justify-between p-5 min-h-[120px] mih" style="background:linear-gradient(150deg,#161b28,#0b0d12)"><div class="w-12 h-12 rounded-xl border-2 border-white grid place-items-center text-xl font-bold bg-black">L</div><span style="font:600 28px Caveat,cursive;transform:rotate(-8deg);text-align:center;line-height:1">Make it<br>happen</span></section>
@@ -109,6 +114,7 @@ label{display:block;font-size:13px;font-weight:600;margin:12px 0 4px}
   <div class="absolute left-0 top-0 bottom-0 w-[80%] max-w-[300px] p-4 flex flex-col gap-1" style="background:var(--card);padding-top:calc(16px + env(safe-area-inset-top,0px))">
     <h2 class="text-xl font-bold px-2 py-3">Life Planner</h2><div id="dn" class="grid gap-1"></div>
     <button class="btn p mt-auto" data-a="new" data-k="task">+ New task</button><button class="btn" data-a="new" data-k="event">+ New event</button>
+    <button class="btn d mt-2" data-a="signout">Sign out</button>
   </div>
 </div>
 <div id="modal" class="fixed inset-0 z-[60] hidden items-end md:items-center justify-center">
@@ -116,6 +122,18 @@ label{display:block;font-size:13px;font-weight:600;margin:12px 0 4px}
   <form id="form" class="relative w-full md:max-w-md rounded-t-2xl md:rounded-2xl p-4 md:p-6 overflow-y-auto card" style="max-height:92dvh;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))" novalidate></form>
 </div>
 <div id="toast" role="status"></div>
+<div id="authOverlay" class="fixed inset-0 z-[70] hidden items-center justify-center bg-black/70">
+  <form id="authForm" class="auth-panel card">
+    <h2 class="text-xl font-bold mb-1">Life Planner</h2>
+    <p class="mute text-sm mb-4">Sign in to sync your private planner across devices.</p>
+    <label for="authEmail">Email</label>
+    <input id="authEmail" name="email" type="email" autocomplete="email" required>
+    <label for="authPassword">Password</label>
+    <input id="authPassword" name="password" type="password" autocomplete="current-password" minlength="6" required>
+    <button class="btn p w-full mt-2" id="authSignIn" type="submit">Sign in</button>
+    <button class="btn w-full mt-2" id="authSignUp" type="button">Create account</button>
+  </form>
+</div>
 
 <script>
 const D=(m,d)=>`2026-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`,TODAY=D(11,21);
@@ -126,18 +144,40 @@ const f12=t=>{let[h,m]=t.split(':');const a=h>=12?'PM':'AM';return(h%12||12)+':'
 const CC={Work:'b',Health:'g',Personal:'p',Finance:'o',Study:'t'},SC={'In Progress':'IP','Not Started':'NS','Done':'DN'};
 const NAV=[['home','Home','⌂'],['tasks','Tasks','✓'],['cal','Calendar','▦'],['habits','Habits','↻'],['more','More','⋯']];
 const TT={home:'Life Planner',tasks:'Tasks',cal:'Calendar',habits:'Habits',more:'More'};
+const SUPABASE_URL='https://mhmhukjyhrvlsorbbhna.supabase.co';
+const SUPABASE_KEY='sb_publishable_xKrPIOIWNU4Pxr6CpL_7fg_SbKIKlZK';
+const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const T0='Finish project proposal|Work|High|In Progress|21,Workout & gym|Health|Medium|Not Started|21,Read 20 pages book|Personal|Medium|Not Started|21,Plan next week|Personal|Low|In Progress|21,Pay electricity bill|Finance|Medium|In Progress|21,Learn new skill|Study|High|Not Started|22,Call family|Personal|Medium|Not Started|22,Edit content for YouTube|Work|High|In Progress|22,Meditation (10 min)|Health|Low|Not Started|22,Plan tomorrow|Personal|Low|Not Started|22'.split(',').map((s,i)=>{const a=s.split('|');return{id:i+1,t:a[0],cat:a[1],pri:a[2],st:a[3],due:D(11,+a[4])}});
 const E0='1|Gym|07:00|g,2|Project Work|10:00|b,4|Study|09:00|p,5|Meeting|11:00|b,6|Gym|07:00|g,7|Reading|20:00|p,8|Work|10:00|b,9|Family Call|19:00|o,11|Gym|07:00|g,12|Study|09:00|p,13|Work|10:00|b,14|Meditate|07:00|g,15|Project Work|11:00|b,16|Reading|20:00|p,18|Gym|07:00|g,19|Meeting|10:00|b,20|Edit Video|16:00|r,21|Plan Week|09:00|p,22|Work|10:00|b,23|Family Time|18:00|o,25|Study|09:00|p,26|Gym|07:00|g,27|Content|16:00|r,28|Reading|20:00|p,29|Work|10:00|b,30|Meditate|07:00|g'.split(',').map((s,i)=>{const a=s.split('|');return{id:i+1,t:a[1],date:D(11,+a[0]),time:a[2],c:a[3]}});
 const wk=(n,k)=>{const a=[];for(let d=1;d<=15;d++)if((d*3+k)%4)a.push(d);for(let d=16;d<16+n;d++)a.push(d);return a};
-const S={v:'home',f:'All',mode:'Month',sel:TODAY,month:new Date(2026,10,1),nid:100,play:false,tk:{},
- tasks:T0,events:E0,habits:[{id:1,n:'Workout',d:wk(6,0)},{id:2,n:'Read',d:wk(5,1)},{id:3,n:'Meditate',d:wk(3,2)},{id:4,n:'No Social Media',d:wk(4,3)},{id:5,n:'Drink Water',d:wk(5,4)}]};
-try{const s=JSON.parse(localStorage.getItem('lp1')||'null');if(s)Object.assign(S,{tasks:s.tasks,events:s.events,habits:s.habits,nid:s.nid})}catch(e){}
-const save=()=>{try{localStorage.setItem('lp1',JSON.stringify({tasks:S.tasks,events:S.events,habits:S.habits,nid:S.nid}))}catch(e){}};
+const S={v:'home',f:'All',mode:'Month',sel:TODAY,month:new Date(2026,10,1),nid:100,play:false,user:null,tk:{},
+ tasks:T0,events:E0,habits:[{id:1,n:'Workout',d:wk(6,0)},{id:2,n:'Read',d:wk(5,1)},{id:3,n:'Meditate',d:wk(3,2)},{id:4,n:'No Social Media',d:wk(4,3)},{id:5,n:'Drink Water',d:wk(5,4)}],
+ cardTitles:['Daily','Planners','Personal','Goals'],
+ cardItems:[
+  ['Today','This Week','Journal'],
+  ['Yearly Planner','Monthly Planner','Weekly Planner'],
+  ['Health & Fitness','Mindset & Growth','Finance'],
+  ['Career','Health','Lifestyle']
+ ],
+ notes:['Be consistent.','Small steps create big changes.','Focus on what matters.','You got this! 💪'],
+ music:{title:'Better Days',artist:'NEFFEX',duration:'3:20',elapsed:'1:42'},
+ upcoming:[{id:1,t:'Project Deadline',date:'2026-11-22',cat:'Work',c:'b'},{id:2,t:'Doctor Appointment',date:'2026-11-24',cat:'Health',c:'g'},{id:3,t:'Weekend Trip Plan',date:'2026-11-25',cat:'Personal',c:'p'},{id:4,t:'Budget Review',date:'2026-11-28',cat:'Finance',c:'o'}],
+ hero:{title:'Life Planner',tagline:'Plan Better  ·  Do More  ·  Live Greater',quote:'A little progress each day adds up to big results.'}};
+try{const s=JSON.parse(localStorage.getItem('lp1')||'null');if(s)Object.assign(S,{tasks:s.tasks,events:s.events,habits:s.habits,nid:s.nid,notes:s.notes,music:s.music,upcoming:s.upcoming,hero:s.hero,cardTitles:s.cardTitles,cardItems:s.cardItems})}catch(e){}
+const save=()=>{const data={tasks:S.tasks,events:S.events,habits:S.habits,nid:S.nid,notes:S.notes,music:S.music,upcoming:S.upcoming,hero:S.hero,cardTitles:S.cardTitles,cardItems:S.cardItems};try{localStorage.setItem('lp1',JSON.stringify(data))}catch(e){}
+ clearTimeout(save.remoteTimer);save.remoteTimer=setTimeout(()=>syncRemote(data),500)};
+async function syncRemote(data){if(!S.user)return;const {error}=await supabaseClient.from('life_planners').upsert({user_id:S.user.id,data,updated_at:new Date().toISOString()},{onConflict:'user_id'});if(error)toast('Could not sync: '+error.message)}
+async function loadRemote(){if(!S.user)return;const {data,error}=await supabaseClient.from('life_planners').select('data').eq('user_id',S.user.id).maybeSingle();
+ if(error){toast('Could not load planner: '+error.message);return}
+ if(data?.data){Object.assign(S,data.data);if(!S.cardTitles)S.cardTitles=['Daily','Planners','Personal','Goals'];if(!S.cardItems)S.cardItems=[['Today','This Week','Journal'],['Yearly Planner','Monthly Planner','Weekly Planner'],['Health & Fitness','Mindset & Growth','Finance'],['Career','Health','Lifestyle']];try{localStorage.setItem('lp1',JSON.stringify(data.data))}catch(e){}}else{syncRemote({tasks:S.tasks,events:S.events,habits:S.habits,nid:S.nid,notes:S.notes,music:S.music,upcoming:S.upcoming,hero:S.hero,cardTitles:S.cardTitles,cardItems:S.cardItems})}render();}
+const showAuth=show=>{$('#authOverlay').classList.toggle('hidden',!show);$('#authOverlay').classList.toggle('flex',show)};
+$('#authForm').addEventListener('submit',async e=>{e.preventDefault();const f=new FormData(e.currentTarget),email=f.get('email'),password=f.get('password');const {error}=await supabaseClient.auth.signInWithPassword({email,password});if(error)toast(error.message)});
+$('#authSignUp').addEventListener('click',async()=>{const f=new FormData($('#authForm')),email=f.get('email'),password=f.get('password');if(!email||String(password).length<6){toast('Enter an email and 6-character password');return}const {error}=await supabaseClient.auth.signUp({email,password});toast(error?error.message:'Check your email to confirm the account')});
 const toast=m=>{const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(toast.h);toast.h=setTimeout(()=>t.style.display='none',1800)};
 const es=(a,b)=>(a.date+a.time).localeCompare(b.date+b.time);
 
 const CARDS=[['Daily','☀','tasks',['Today','This Week','Journal']],['Planners','▦','cal',['Yearly Planner','Monthly Planner','Weekly Planner']],['Personal','☺','habits',['Health & Fitness','Mindset & Growth','Finance']],['Goals','◎','more',['Career','Health','Lifestyle']]];
-function cards(){$('#cards').innerHTML=CARDS.map(([n,i,v,l])=>`<div class="card p-3 md:p-4"><button class="flex items-center gap-2 w-full min-h-[44px] bg-transparent border-0 cursor-pointer text-left" data-a="go" data-v="${v}"><span class="ico">${i}</span><b class="flex-1 text-[15px]">${n}</b><span class="mute">›</span></button>${l.map(x=>`<button class="flex items-center gap-2 w-full min-h-[40px] bg-transparent border-0 cursor-pointer mute text-left text-[13px]" data-a="tk" data-k="${x}"><span class="chk" style="width:20px;height:20px"><i style="width:16px;height:16px;${S.tk[x]?'background:var(--ok);border-color:var(--ok)':''}">${S.tk[x]?'✓':''}</i></span>${x}</button>`).join('')}</div>`).join('')}
+function cards(){$('#cards').innerHTML=CARDS.map(([n,i,v],index)=>`<div class="card p-3 md:p-4"><div class="flex items-center gap-2 min-h-[44px]"><button class="flex items-center gap-2 flex-1 min-h-[44px] bg-transparent border-0 cursor-pointer text-left" data-a="go" data-v="${v}"><span class="ico">${i}</span><b class="text-[15px]">${esc(S.cardTitles[index]||n)}</b></button><button class="btn g" data-a="edit-card" data-index="${index}" aria-label="Edit ${esc(S.cardTitles[index]||n)}">✎</button></div>${(S.cardItems[index]||[]).map((x,itemIndex)=>`<div class="flex items-center gap-1"><button class="flex items-center gap-2 flex-1 min-h-[40px] bg-transparent border-0 cursor-pointer mute text-left text-[13px]" data-a="tk" data-k="${esc(x)}"><span class="chk" style="width:20px;height:20px"><i style="width:16px;height:16px;${S.tk[x]?'background:var(--ok);border-color:var(--ok)':''}">${S.tk[x]?'✓':''}</i></span>${esc(x)}</button><button class="btn g" data-a="edit-card-item" data-card="${index}" data-item="${itemIndex}" aria-label="Edit ${esc(x)}">✎</button></div>`).join('')}</div>`).join('')}
 
 const tCard=t=>`<div class="card flex items-center pr-1 ${t.st==='Done'?'done':''}" style="background:var(--card2)"><button class="chk ${t.st==='Done'?'on':''}" data-a="tog" data-id="${t.id}" aria-label="Mark done"><i>${t.st==='Done'?'✓':''}</i></button><div class="flex-1 min-w-0 py-2"><div class="tt font-semibold break-words">${esc(t.t)}</div><div class="flex flex-wrap gap-1.5 mt-1 items-center"><span class="chip c-${CC[t.cat]}">${t.cat}</span><span class="chip c-${t.pri}">${t.pri}</span><span class="text-xs mute">${fd(t.due,{month:'short',day:'numeric'})}</span></div></div><button class="btn g" data-a="edit" data-id="${t.id}" aria-label="Edit">✎</button><button class="btn g d" data-a="del" data-id="${t.id}" aria-label="Delete">🗑</button></div>`;
 const tRow=t=>`<tr class="${t.st==='Done'?'done':''}"><td style="width:48px"><button class="chk ${t.st==='Done'?'on':''}" data-a="tog" data-id="${t.id}" aria-label="Mark done"><i>${t.st==='Done'?'✓':''}</i></button></td><td class="tt font-medium">${esc(t.t)}</td><td><span class="chip c-${CC[t.cat]}">${t.cat}</span></td><td><span class="chip c-${t.pri}">${t.pri}</span></td><td><span class="chip c-${SC[t.st]}">${t.st}</span></td><td class="mute whitespace-nowrap">${fd(t.due)}</td><td class="whitespace-nowrap text-right"><button class="btn g" data-a="edit" data-id="${t.id}" aria-label="Edit">✎</button><button class="btn g d" data-a="del" data-id="${t.id}" aria-label="Delete">🗑</button></td></tr>`;
@@ -148,7 +188,7 @@ function tasks(){
  <div class="hidden md:block"><table><thead><tr><th></th><th>Task Name</th><th>Category</th><th>Priority</th><th>Status</th><th>Due Date</th><th></th></tr></thead><tbody>${l.map(tRow).join('')}</tbody></table></div>
  <div class="md:hidden grid gap-2 mt-2">${l.map(tCard).join('')}</div>${l.length?'':'<p class="mute py-4">No tasks here. Add one to get started.</p>'}`;}
 
-const evI=(e,showD)=>`<div class="flex items-center gap-3 py-1 c-${e.c}"><span class="dt"></span><div class="flex-1 min-w-0"><div class="font-medium break-words">${esc(e.t)}</div><div class="text-xs mute">${showD?fd(e.date,{weekday:'short',month:'short',day:'numeric'})+', ':''}${f12(e.time)}</div></div><button class="btn g d" data-a="dev" data-id="${e.id}" aria-label="Delete event">🗑</button></div>`;
+const evI=(e,showD)=>`<div class="flex items-center gap-3 py-1 c-${e.c}"><span class="dt"></span><div class="flex-1 min-w-0"><div class="font-medium break-words">${esc(e.t)}</div><div class="text-xs mute">${showD?fd(e.date,{weekday:'short',month:'short',day:'numeric'})+', ':''}${f12(e.time)}</div></div><button class="btn g" data-a="edit-event" data-id="${e.id}" aria-label="Edit event">✎</button><button class="btn g d" data-a="dev" data-id="${e.id}" aria-label="Delete event">🗑</button></div>`;
 function cal(){
  const m=S.month,y=m.getFullYear(),mo=m.getMonth(),st=new Date(y,mo,1).getDay(),dim=new Date(y,mo+1,0).getDate(),n=Math.ceil((st+dim)/7)*7;
  let body='';
@@ -164,41 +204,74 @@ function cal(){
 
 function hab(){
  const wd=[16,17,18,19,20,21,22],L='MTWTFSS';
- const wkr=`<div class="hidden md:block"><div class="hrow mute text-xs"><span></span>${[...L].map(x=>`<span class="text-center">${x}</span>`).join('')}</div>${S.habits.map(h=>`<div class="hrow"><span class="truncate text-[13px]">${esc(h.n)}</span>${wd.map(d=>`<button class="hd ${h.d.includes(d)?'on':''}" ${d>21?'disabled':''} data-a="hab" data-id="${h.id}" data-d="${d}" aria-label="${esc(h.n)}, Nov ${d}">${h.d.includes(d)?'✓':''}</button>`).join('')}</div>`).join('')}</div>`;
+ const wkr=`<div class="hidden md:block"><div class="hrow mute text-xs"><span></span>${[...L].map(x=>`<span class="text-center">${x}</span>`).join('')}</div>${S.habits.map(h=>`<div class="hrow"><button class="text-left truncate text-[13px] bg-transparent border-0 cursor-pointer" data-a="edit-habit" data-id="${h.id}" title="Edit habit">${esc(h.n)} ✎</button>${wd.map(d=>`<button class="hd ${h.d.includes(d)?'on':''}" ${d>21?'disabled':''} data-a="hab" data-id="${h.id}" data-d="${d}" aria-label="${esc(h.n)}, Nov ${d}">${h.d.includes(d)?'✓':''}</button>`).join('')}</div>`).join('')}</div>`;
  const days=Array.from({length:30},(_,i)=>i+1);
- const mg=`<div class="md:hidden overflow-x-auto"><table style="border-spacing:4px;border-collapse:separate;width:auto"><thead><tr><th class="sticky left-0 z-10" style="background:var(--card);min-width:112px">Habit</th>${days.map(d=>`<th class="text-center ${d===21?'':'mute'}">${d}</th>`).join('')}</tr></thead><tbody>${S.habits.map(h=>`<tr><td class="sticky left-0 z-10 font-semibold text-[13px]" style="background:var(--card);border:0">${esc(h.n)}</td>${days.map(d=>`<td style="border:0;padding:0"><button class="hm ${h.d.includes(d)?'on':''}" ${d>21?'disabled':''} data-a="hab" data-id="${h.id}" data-d="${d}" aria-label="${esc(h.n)}, Nov ${d}">${h.d.includes(d)?'✓':''}</button></td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
- $('#hab').innerHTML=`<div class="flex items-center justify-between mb-2"><h3 class="font-semibold flex items-center gap-2"><span class="ico" style="background:#14532d;color:#4ade80">✓</span>Habit Tracker</h3></div><div class="mute text-xs mb-2">November 2026${'' }</div>${wkr}${mg}`;}
+ const mg=`<div class="md:hidden overflow-x-auto"><table style="border-spacing:4px;border-collapse:separate;width:auto"><thead><tr><th class="sticky left-0 z-10" style="background:var(--card);min-width:112px">Habit</th>${days.map(d=>`<th class="text-center ${d===21?'':'mute'}">${d}</th>`).join('')}</tr></thead><tbody>${S.habits.map(h=>`<tr><td class="sticky left-0 z-10 font-semibold text-[13px]" style="background:var(--card);border:0"><button class="bg-transparent border-0 text-left cursor-pointer" data-a="edit-habit" data-id="${h.id}">${esc(h.n)} ✎</button></td>${days.map(d=>`<td style="border:0;padding:0"><button class="hm ${h.d.includes(d)?'on':''}" ${d>21?'disabled':''} data-a="hab" data-id="${h.id}" data-d="${d}" aria-label="${esc(h.n)}, Nov ${d}">${h.d.includes(d)?'✓':''}</button></td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+ $('#hab').innerHTML=`<div class="flex items-center justify-between mb-2"><h3 class="font-semibold flex items-center gap-2"><span class="ico" style="background:#14532d;color:#4ade80">✓</span>Habit Tracker</h3><button class="btn g" data-a="new-habit" aria-label="Add habit">+</button></div><div class="mute text-xs mb-2">November 2026${'' }</div>${wkr}${mg}`;}
 
-const UP=[['Project Deadline','Nov 22, 2026','Work','b'],['Doctor Appointment','Nov 24, 2026','Health','g'],['Weekend Trip Plan','Nov 25, 2026','Personal','p'],['Budget Review','Nov 28, 2026','Finance','o']];
-$('#upc').innerHTML=UP.map(u=>`<div class="flex items-center gap-3 py-2 c-${u[3]} border-t" style="border-color:var(--line)"><span class="dt" style="width:11px;height:11px"></span><div class="flex-1 min-w-0"><div class="font-medium">${u[0]}</div><div class="text-xs mute">${u[1]}</div></div><span class="chip">${u[2]}</span></div>`).join('');
+function upcoming(){const el=$('#upc');if(!el)return;
+ el.innerHTML=`<div class="flex justify-end -mt-10 mb-2"><button class="btn g" data-a="new-upcoming" aria-label="Add upcoming item">+</button></div>`+S.upcoming.map(u=>`<div class="flex items-center gap-3 py-2 c-${u.c} border-t" style="border-color:var(--line)"><span class="dt" style="width:11px;height:11px"></span><div class="flex-1 min-w-0"><button class="text-left bg-transparent border-0 cursor-pointer p-0" data-a="edit-upcoming" data-id="${u.id}"><div class="font-medium">${esc(u.t)} ✎</div><div class="text-xs mute">${fd(u.date,{month:'short',day:'numeric',year:'numeric'})}</div></button></div><span class="chip">${esc(u.cat)}</span></div>`).join('');}
 
 function render(){
  document.body.dataset.v=S.v;$('#ttl').textContent=TT[S.v];
  const nv=NAV.map(([v,l,i])=>`<a class="${S.v===v?'on':''}" data-a="go" data-v="${v}" role="button" tabindex="0"><b>${i}</b>${l}</a>`).join('');
  $('#bn').innerHTML=nv;$('#dn').innerHTML=NAV.map(([v,l,i])=>`<a class="flex items-center gap-3 min-h-[48px] px-3 rounded-xl font-semibold cursor-pointer ${S.v===v?'bg-[#1b1d44]':''}" data-a="go" data-v="${v}" role="button" tabindex="0">${i} ${l}</a>`).join('');
  $('#fab').style.display=['home','tasks','cal'].includes(S.v)?'':'none';
- cards();tasks();cal();hab();}
+ cards();tasks();cal();hab();upcoming();
+ $('#heroTitle').textContent=S.hero.title;$('#heroTagline').textContent=S.hero.tagline;$('#heroQuote').textContent=S.hero.quote;
+ $('#quickNotes').innerHTML=S.notes.map(n=>`<li>${esc(n)}</li>`).join('');
+ $('#musicTitle').textContent=S.music.title;$('#musicArtist').textContent=S.music.artist;$('#musicElapsed').textContent=S.music.elapsed;$('#musicDuration').textContent=S.music.duration;}
 
 function openForm(k,id){
- const t=k==='task'&&id?S.tasks.find(x=>x.id==id):null,o=(a,v)=>a.map(x=>`<option ${x===v?'selected':''}>${x}</option>`).join('');
- let f=`<h2 class="text-xl font-bold mb-1">${t?'Edit task':k==='task'?'New task':'New event'}</h2><input type="hidden" name="k" value="${k}"><input type="hidden" name="id" value="${id||''}"><label for="f1">Title</label><input id="f1" name="t" value="${t?esc(t.t):''}" autocomplete="off">`;
- if(k==='task')f+=`<div class="grid grid-cols-2 gap-3"><div><label>Category</label><select name="cat">${o(Object.keys(CC),t&&t.cat)}</select></div><div><label>Priority</label><select name="pri">${o(['High','Medium','Low'],t?t.pri:'Medium')}</select></div></div><div class="grid grid-cols-2 gap-3"><div><label>Status</label><select name="st">${o(Object.keys(SC),t?t.st:'Not Started')}</select></div><div><label>Due date</label><input type="date" name="d" value="${t?t.due:S.sel}"></div></div>`;
- else f+=`<div class="grid grid-cols-2 gap-3"><div><label>Date</label><input type="date" name="d" value="${S.sel}"></div><div><label>Time</label><input type="time" name="time" value="09:00"></div></div><label>Type</label><select name="c"><option value="b">Work</option><option value="g">Health</option><option value="p">Study</option><option value="o">Family</option><option value="r">Content</option></select>`;
+ const t=k==='task'&&id?S.tasks.find(x=>x.id==id):null;
+ const e=k==='event'&&id?S.events.find(x=>x.id==id):null;
+ const h=k==='habit'&&id?S.habits.find(x=>x.id==id):null;
+ const u=k==='upcoming'&&id?S.upcoming.find(x=>x.id==id):null;
+ const o=(a,v)=>a.map(x=>`<option ${x===v?'selected':''}>${x}</option>`).join('');
+ let f='',title='';
+ if(k==='task'){title=t?'Edit task':'New task';f=`<label for="f1">Title</label><input id="f1" name="t" value="${t?esc(t.t):''}" autocomplete="off"><div class="grid grid-cols-2 gap-3"><div><label>Category</label><select name="cat">${o(Object.keys(CC),t&&t.cat)}</select></div><div><label>Priority</label><select name="pri">${o(['High','Medium','Low'],t?t.pri:'Medium')}</select></div></div><div class="grid grid-cols-2 gap-3"><div><label>Status</label><select name="st">${o(Object.keys(SC),t?t.st:'Not Started')}</select></div><div><label>Due date</label><input type="date" name="d" value="${t?t.due:S.sel}"></div></div>`;}
+ else if(k==='event'){title=e?'Edit event':'New event';const ct=[['b','Work'],['g','Health'],['p','Study'],['o','Family'],['r','Content']],labels=ct.map(([v,l])=>`<option value="${v}" ${e?(e.c===v?'selected':''):(v==='b'?'selected':'')}>${l}</option>`).join('');f=`<label for="f1">Title</label><input id="f1" name="t" value="${e?esc(e.t):''}" autocomplete="off"><div class="grid grid-cols-2 gap-3"><div><label>Date</label><input type="date" name="d" value="${e?e.date:S.sel}"></div><div><label>Time</label><input type="time" name="time" value="${e?e.time:'09:00'}"></div></div><label>Type</label><select name="c">${labels}</select>`;}
+ else if(k==='habit'){title=h?'Edit habit':'New habit';f=`<label for="f1">Habit name</label><input id="f1" name="n" value="${h?esc(h.n):''}" autocomplete="off">`;}
+ else if(k==='notes'){title='Edit quick notes';f=`<label for="f1">One note per line</label><textarea id="f1" name="n" class="w-full min-h-[180px] rounded-xl p-3" style="border:1px solid var(--line);background:var(--bg);color:var(--ink);font:16px Inter,sans-serif">${S.notes.map(esc).join('\n')}</textarea>`;}
+ else if(k==='music'){title='Edit now playing';f=`<label for="f1">Track title</label><input id="f1" name="title" value="${esc(S.music.title)}"><label>Artist</label><input name="artist" value="${esc(S.music.artist)}"><div class="grid grid-cols-2 gap-3"><div><label>Elapsed</label><input name="elapsed" value="${esc(S.music.elapsed)}"></div><div><label>Duration</label><input name="duration" value="${esc(S.music.duration)}"></div></div>`;}
+ else if(k==='hero'){title='Edit hero';f=`<label for="f1">Title</label><input id="f1" name="title" value="${esc(S.hero.title)}"><label>Tagline</label><input name="tagline" value="${esc(S.hero.tagline)}"><label>Quote</label><input name="quote" value="${esc(S.hero.quote)}">`;}
+ else if(k==='upcoming'){title=u?'Edit upcoming item':'New upcoming item';f=`<label for="f1">Title</label><input id="f1" name="t" value="${u?esc(u.t):''}" autocomplete="off"><div class="grid grid-cols-2 gap-3"><div><label>Date</label><input type="date" name="d" value="${u?u.date:TODAY}"></div><div><label>Category</label><select name="cat">${o(['Work','Health','Personal','Finance','Study'],u?u.cat:'Personal')}</select></div></div>`;}
+ else if(k==='card'){const index=+id,titleValue=S.cardTitles[index]||CARDS[index][0];title='Edit section title';f=`<label for="f1">Section title</label><input id="f1" name="title" value="${esc(titleValue)}" autocomplete="off">`;}
+ else if(k==='card-item'){const [cardIndex,itemIndex]=String(id).split(':').map(Number);const itemValue=S.cardItems[cardIndex]?.[itemIndex]||'';title='Edit card item';f=`<label for="f1">Item name</label><input id="f1" name="title" value="${esc(itemValue)}" autocomplete="off">`;}
+ f=`<h2 class="text-xl font-bold mb-1">${title}</h2><input type="hidden" name="k" value="${k}"><input type="hidden" name="id" value="${id||''}">`+f;
  f+=`<div class="flex gap-2 mt-5"><button type="button" class="btn flex-1" data-a="close">Cancel</button><button class="btn p flex-1">Save</button></div>`;
  $('#form').innerHTML=f;$('#modal').classList.replace('hidden','flex');setTimeout(()=>$('#f1').focus(),60);}
 const closeM=()=>$('#modal').classList.replace('flex','hidden');
-$('#form').addEventListener('submit',e=>{e.preventDefault();const f=new FormData(e.target),k=f.get('k'),t=f.get('t').trim(),id=f.get('id');
- if(!t){toast('Enter a title first');$('#f1').focus();return}
- if(k==='task'){const o={t,cat:f.get('cat'),pri:f.get('pri'),st:f.get('st'),due:f.get('d')||TODAY};id?Object.assign(S.tasks.find(x=>x.id==id),o):S.tasks.push({id:S.nid++,...o});toast('Task saved')}
- else{S.events.push({id:S.nid++,t,date:f.get('d')||S.sel,time:f.get('time')||'09:00',c:f.get('c')});toast('Event saved')}
+$('#form').addEventListener('submit',e=>{e.preventDefault();const f=new FormData(e.target),k=f.get('k'),id=f.get('id');
+ if(k==='task'){const t=(f.get('t')||'').trim();if(!t){toast('Enter a title first');$('#f1').focus();return}const o={t,cat:f.get('cat'),pri:f.get('pri'),st:f.get('st'),due:f.get('d')||TODAY};id?Object.assign(S.tasks.find(x=>x.id==id),o):S.tasks.push({id:S.nid++,...o});toast('Task saved')}
+ else if(k==='event'){const t=(f.get('t')||'').trim();if(!t){toast('Enter a title first');$('#f1').focus();return}const o={t,date:f.get('d')||S.sel,time:f.get('time')||'09:00',c:f.get('c')};id?Object.assign(S.events.find(x=>x.id==id),o):S.events.push({id:S.nid++,...o});toast('Event saved')}
+ else if(k==='habit'){const n=(f.get('n')||'').trim();if(!n){toast('Enter a habit name');$('#f1').focus();return}if(id)Object.assign(S.habits.find(x=>x.id==id),{n});else S.habits.push({id:S.nid++,n,d:[]});toast('Habit saved')}
+ else if(k==='notes'){S.notes=(f.get('n')||'').split('\n').map(x=>x.trim()).filter(Boolean);toast('Notes saved')}
+ else if(k==='music'){S.music={title:(f.get('title')||'').trim()||'Untitled',artist:(f.get('artist')||'').trim()||'Unknown artist',elapsed:(f.get('elapsed')||'').trim()||'0:00',duration:(f.get('duration')||'').trim()||'0:00'};toast('Music saved')}
+ else if(k==='hero'){S.hero={title:(f.get('title')||'').trim()||'Life Planner',tagline:(f.get('tagline')||'').trim(),quote:(f.get('quote')||'').trim()};toast('Hero saved')}
+ else if(k==='upcoming'){const t=(f.get('t')||'').trim();if(!t){toast('Enter a title first');$('#f1').focus();return}const cat=f.get('cat'),colors={Work:'b',Health:'g',Personal:'p',Finance:'o',Study:'t'},o={t,date:f.get('d')||TODAY,cat,c:colors[cat]||'p'};if(id)Object.assign(S.upcoming.find(x=>x.id==id),o);else S.upcoming.push({id:S.nid++,...o});toast('Upcoming item saved')}
+ else if(k==='card'){const title=(f.get('title')||'').trim();if(!title){toast('Enter a section title');$('#f1').focus();return}S.cardTitles[+id]=title;toast('Section title saved')}
+ else if(k==='card-item'){const title=(f.get('title')||'').trim();if(!title){toast('Enter an item name');$('#f1').focus();return}const [cardIndex,itemIndex]=String(id).split(':').map(Number);S.cardItems[cardIndex][itemIndex]=title;toast('Card item saved')}
  save();closeM();render();});
 
 function go(v){S.v=v;$('#drawer').classList.add('hidden');render();if(innerWidth>=768){const m={tasks:'#tasks',cal:'#cal',habits:'#hab',more:'.mih,.not'};const el=m[v]&&document.querySelector(m[v]);el?el.scrollIntoView():scrollTo(0,0)}else scrollTo(0,0)}
 document.addEventListener('click',e=>{const el=e.target.closest('[data-a]');if(!el)return;const a=el.dataset.a,id=el.dataset.id;
  if(a==='go')go(el.dataset.v);
+ else if(a==='signout'){supabaseClient.auth.signOut();$('#drawer').classList.add('hidden')}
  else if(a==='drawer')$('#drawer').classList.toggle('hidden');
  else if(a==='new'){$('#drawer').classList.add('hidden');openForm(el.dataset.k||(S.v==='cal'?'event':'task'))}
- else if(a==='edit')openForm('task',id);else if(a==='close')closeM();
+ else if(a==='edit')openForm('task',id);
+ else if(a==='edit-event')openForm('event',id);
+ else if(a==='edit-habit')openForm('habit',id);
+ else if(a==='new-habit')openForm('habit');
+ else if(a==='edit-notes')openForm('notes');
+ else if(a==='edit-music')openForm('music');
+ else if(a==='edit-hero')openForm('hero');
+ else if(a==='edit-upcoming')openForm('upcoming',id);
+ else if(a==='new-upcoming')openForm('upcoming');
+ else if(a==='edit-card')openForm('card',el.dataset.index);
+ else if(a==='edit-card-item')openForm('card-item',el.dataset.card+':'+el.dataset.item);
+ else if(a==='close')closeM();
  else if(a==='tog'){const t=S.tasks.find(x=>x.id==id);t.st=t.st==='Done'?'Not Started':'Done';save();tasks()}
  else if(a==='del'){S.tasks=S.tasks.filter(x=>x.id!=id);save();toast('Task deleted');tasks()}
  else if(a==='dev'){S.events=S.events.filter(x=>x.id!=id);save();toast('Event deleted');cal()}
@@ -210,6 +283,9 @@ document.addEventListener('click',e=>{const el=e.target.closest('[data-a]');if(!
  else if(a==='tk'){S.tk[el.dataset.k]=!S.tk[el.dataset.k];cards()}});
 $('#play').addEventListener('click',e=>{S.play=!S.play;e.currentTarget.textContent=S.play?'❚❚':'▶'});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeM();$('#drawer').classList.add('hidden')}if((e.key==='Enter'||e.key===' ')&&e.target.matches('a[data-a]')){e.preventDefault();e.target.click()}});
+async function initAuth(){const {data}=await supabaseClient.auth.getSession();S.user=data.session?.user||null;if(!S.user){showAuth(true);return}showAuth(false);await loadRemote()}
+supabaseClient.auth.onAuthStateChange(async(_event,session)=>{S.user=session?.user||null;if(S.user){showAuth(false);await loadRemote()}else showAuth(true)});
+initAuth();
 render();
 </script>
 </body>
