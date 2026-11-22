@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
 <title>Life Planner</title>
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#080a0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Caveat:wght@600&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com/3.4.17"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -193,12 +197,18 @@ const showAuth=show=>{$('#authOverlay').classList.toggle('hidden',!show);$('#aut
 $('#authForm').addEventListener('submit',async e=>{e.preventDefault();const f=new FormData(e.currentTarget),email=f.get('email'),password=f.get('password');const {error}=await supabaseClient.auth.signInWithPassword({email,password});if(error)toast(error.message)});
 $('#authSignUp').addEventListener('click',async()=>{const f=new FormData($('#authForm')),email=f.get('email'),password=f.get('password');if(!email||String(password).length<6){toast('Enter an email and 6-character password');return}const {error}=await supabaseClient.auth.signUp({email,password});toast(error?error.message:'Check your email to confirm the account')});
 const toast=m=>{const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(toast.h);toast.h=setTimeout(()=>t.style.display='none',1800)};
-const notificationSupported=()=> 'Notification' in window;
+const notificationSupported=()=> 'Notification' in window && window.isSecureContext;
 async function enableNotifications(){
- if(!notificationSupported()){toast('Browser notifications are not supported');return false}
+ if(!notificationSupported()){
+  const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
+  toast(isIOS?'Add this page to Home Screen, then enable notifications':'Notifications require HTTPS and a supported browser');
+  return false
+ }
  if(Notification.permission==='granted'){toast('Event notifications are enabled');return true}
  if(Notification.permission==='denied'){toast('Notifications blocked. Enable them in browser settings');return false}
- const permission=await Notification.requestPermission();
+ const permission=typeof Notification.requestPermission==='function'
+  ? await Notification.requestPermission()
+  : 'denied';
  if(permission==='granted'){toast('Event notifications enabled');return true}
  toast('Notification permission was not granted');
  return false;
@@ -210,10 +220,16 @@ function showReminder(event,minutesBefore){
  $('#reminderNote').textContent=event.note||'';
  card.style.display='block';
  if(notificationSupported()&&Notification.permission==='granted'){
+  const title=minutesBefore===0?`Now: ${event.t}`:`Upcoming: ${event.t}`;
+  const options={body:event.note||eventTime(event),tag:`life-planner-${event.id}-${minutesBefore}`,renotify:true};
   try{
-   const notification=new Notification(minutesBefore===0?`Now: ${event.t}`:`Upcoming: ${event.t}`,{body:event.note||eventTime(event),tag:`life-planner-${event.id}-${minutesBefore}`,renotify:true});
-   notification.onclick=()=>{window.focus();card.scrollIntoView({block:'center'})};
-  }catch(error){}
+   if(navigator.serviceWorker?.controller){
+    navigator.serviceWorker.ready.then(registration=>registration.showNotification(title,options));
+   }else{
+    const notification=new Notification(title,options);
+    notification.onclick=()=>{window.focus();card.scrollIntoView({block:'center'})};
+   }
+  }catch(error){/* The in-app reminder card remains available as a fallback. */}
  }
  clearTimeout(showReminder.timer);
  showReminder.timer=setTimeout(()=>card.style.display='none',minutesBefore===0?30000:15000);
@@ -226,9 +242,12 @@ function checkEventReminders(){
  S.events.filter(e=>e.date===date).forEach(e=>{
   const [hour,minute]=(e.start||e.time||'09:00').split(':').map(Number);
   const start=new Date(now.getFullYear(),now.getMonth(),now.getDate(),hour,minute,0);
-  const diff=Math.round((start-now)/60000);
+  const diff=(start-now)/60000;
   [10,0].forEach(minutesBefore=>{
-   if(diff===minutesBefore){
+   const isDue=minutesBefore===10
+    ? diff<=10 && diff>=9
+    : diff<=0.5 && diff>=-10;
+   if(isDue){
     const key=`lp-reminder-${e.id}-${date}-${minutesBefore}`;
     let sent=false;
     try{sent=localStorage.getItem(key)==='1'}catch(err){}
@@ -451,6 +470,11 @@ normalizeEvents();
 render();
 checkEventReminders();
 setInterval(checkEventReminders,30000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkEventReminders()});
+window.addEventListener('pageshow',checkEventReminders);
+if('serviceWorker' in navigator&&location.protocol==='https:'){
+ navigator.serviceWorker.register('./sw.js').catch(()=>{});
+}
 </script>
 </body>
 </html>
