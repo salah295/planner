@@ -58,6 +58,8 @@ details>summary{list-style:none;cursor:pointer;min-height:44px;display:flex;alig
 input,select{width:100%;min-height:48px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:16px Inter,sans-serif}
 label{display:block;font-size:13px;font-weight:600;margin:12px 0 4px}
 #toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(80px + env(safe-area-inset-bottom,0px));background:#e9ecf3;color:#0b0d12;padding:10px 16px;border-radius:10px;font-weight:600;z-index:80;display:none}
+#reminderCard{position:fixed;right:12px;bottom:calc(82px + env(safe-area-inset-bottom,0px));width:min(360px,calc(100% - 24px));padding:12px;border-radius:14px;border:1px solid var(--line);background:var(--card);box-shadow:0 12px 32px rgba(0,0,0,.45);z-index:75;display:none}
+#reminderCard .reminder-actions{display:flex;gap:8px;margin-top:10px}
 .auth-panel{width:min(420px,calc(100% - 32px));padding:24px;border-radius:16px}
 .auth-panel input{margin-bottom:10px}
 @media(max-width:767px){
@@ -75,6 +77,7 @@ label{display:block;font-size:13px;font-weight:600;margin:12px 0 4px}
 <header class="md:hidden sticky z-30 flex items-center gap-2 px-2 h-14 border-b" style="top:env(safe-area-inset-top,0px);background:var(--card);border-color:var(--line)">
   <button class="btn g" data-a="drawer" aria-label="Open menu" style="font-size:20px">☰</button>
   <h1 class="text-lg font-bold flex-1" id="ttl">Home</h1>
+  <button class="btn g" data-a="notifications" aria-label="Enable event notifications" title="Event notifications">🔔</button>
 </header>
 
 <main class="p-3 md:p-6 lg:p-8 pb-28 md:pb-8 max-w-[1400px] mx-auto grid gap-4">
@@ -128,6 +131,12 @@ label{display:block;font-size:13px;font-weight:600;margin:12px 0 4px}
   <form id="form" class="relative w-full md:max-w-md rounded-t-2xl md:rounded-2xl p-4 md:p-6 overflow-y-auto card" style="max-height:92dvh;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))" novalidate></form>
 </div>
 <div id="toast" role="status"></div>
+<div id="reminderCard" role="alert" aria-live="polite">
+  <div class="font-semibold" id="reminderTitle"></div>
+  <div class="text-xs mute mt-1" id="reminderTime"></div>
+  <div class="text-xs mute mt-1" id="reminderNote"></div>
+  <div class="reminder-actions"><button class="btn p flex-1" data-a="quick-event">+ Add event</button><button class="btn flex-1" data-a="dismiss-reminder">Dismiss</button></div>
+</div>
 <div id="authOverlay" class="fixed inset-0 z-[70] hidden items-center justify-center bg-black/70">
   <form id="authForm" class="auth-panel card">
     <h2 class="text-xl font-bold mb-1">Life Planner</h2>
@@ -184,8 +193,50 @@ const showAuth=show=>{$('#authOverlay').classList.toggle('hidden',!show);$('#aut
 $('#authForm').addEventListener('submit',async e=>{e.preventDefault();const f=new FormData(e.currentTarget),email=f.get('email'),password=f.get('password');const {error}=await supabaseClient.auth.signInWithPassword({email,password});if(error)toast(error.message)});
 $('#authSignUp').addEventListener('click',async()=>{const f=new FormData($('#authForm')),email=f.get('email'),password=f.get('password');if(!email||String(password).length<6){toast('Enter an email and 6-character password');return}const {error}=await supabaseClient.auth.signUp({email,password});toast(error?error.message:'Check your email to confirm the account')});
 const toast=m=>{const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(toast.h);toast.h=setTimeout(()=>t.style.display='none',1800)};
+const notificationSupported=()=> 'Notification' in window;
+async function enableNotifications(){
+ if(!notificationSupported()){toast('Browser notifications are not supported');return false}
+ if(Notification.permission==='granted'){toast('Event notifications are enabled');return true}
+ if(Notification.permission==='denied'){toast('Notifications blocked. Enable them in browser settings');return false}
+ const permission=await Notification.requestPermission();
+ if(permission==='granted'){toast('Event notifications enabled');return true}
+ toast('Notification permission was not granted');
+ return false;
+}
+function showReminder(event,minutesBefore){
+ const card=$('#reminderCard');
+ $('#reminderTitle').textContent=minutesBefore===0?`Now: ${event.t}`:`Upcoming: ${event.t}`;
+ $('#reminderTime').textContent=eventTime(event);
+ $('#reminderNote').textContent=event.note||'';
+ card.style.display='block';
+ if(notificationSupported()&&Notification.permission==='granted'){
+  try{
+   const notification=new Notification(minutesBefore===0?`Now: ${event.t}`:`Upcoming: ${event.t}`,{body:event.note||eventTime(event),tag:`life-planner-${event.id}-${minutesBefore}`,renotify:true});
+   notification.onclick=()=>{window.focus();card.scrollIntoView({block:'center'})};
+  }catch(error){}
+ }
+ clearTimeout(showReminder.timer);
+ showReminder.timer=setTimeout(()=>card.style.display='none',minutesBefore===0?30000:15000);
+}
 const normalizeEvents=()=>{S.events.forEach(e=>{if(!e.start)e.start=e.time||'09:00';if(!e.end)e.end='';if(!e.note)e.note='';if(!e.type){const match=S.eventTypes?.find(type=>type.c===e.c);e.type=match?.name||'Other';e.c=match?.c||e.c||'r'}})};
 const eventTime=e=>e.end?`${f12(e.start)} – ${f12(e.end)}`:f12(e.start||e.time||'09:00');
+function checkEventReminders(){
+ const now=new Date();
+ const date=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+ S.events.filter(e=>e.date===date).forEach(e=>{
+  const [hour,minute]=(e.start||e.time||'09:00').split(':').map(Number);
+  const start=new Date(now.getFullYear(),now.getMonth(),now.getDate(),hour,minute,0);
+  const diff=Math.round((start-now)/60000);
+  [10,0].forEach(minutesBefore=>{
+   if(diff===minutesBefore){
+    const key=`lp-reminder-${e.id}-${date}-${minutesBefore}`;
+    let sent=false;
+    try{sent=localStorage.getItem(key)==='1'}catch(err){}
+    if(!sent){try{localStorage.setItem(key,'1')}catch(err){}showReminder(e,minutesBefore)}
+   }
+  });
+ });
+}
 const es=(a,b)=>(a.date+(a.start||a.time||'')).localeCompare(b.date+(b.start||b.time||''));
 
 const CARDS=[['Daily','☀','tasks',['Today','This Week','Journal']],['Planners','▦','cal',['Yearly Planner','Monthly Planner','Weekly Planner']],['Personal','☺','habits',['Health & Fitness','Mindset & Growth','Finance']],['Goals','◎','more',['Career','Health','Lifestyle']]];
@@ -285,7 +336,7 @@ function cal(){
   body=`<div class="divide-y" style="--tw-divide-opacity:1">${l.sort(es).map(e=>evI(e,true)).join('')||'<p class="mute py-4">No events in this view.</p>'}</div>`;}
  $('#cal').innerHTML=`<div class="flex flex-wrap items-center gap-2 mb-3"><h2 class="text-lg font-semibold flex items-center gap-2 mr-auto"><span class="ico" style="background:#312e81">▦</span>Calendar</h2>
  <div class="flex items-center"><button class="btn g" data-a="mo" data-n="-1" aria-label="Previous month">‹</button><b class="min-w-[110px] text-center">${m.toLocaleDateString('en',{month:'long',year:'numeric'})}</b><button class="btn g" data-a="mo" data-n="1" aria-label="Next month">›</button></div>
- <div class="seg max-w-full">${['Month','Week','Day','Agenda'].map(x=>`<button class="${S.mode===x?'on':''}" data-a="mode" data-m="${x}">${x}</button>`).join('')}</div><button class="btn hidden md:inline-flex" data-a="new" data-k="event">+ Event</button></div>${body}`;}
+ <div class="seg max-w-full">${['Month','Week','Day','Agenda'].map(x=>`<button class="${S.mode===x?'on':''}" data-a="mode" data-m="${x}">${x}</button>`).join('')}</div><button class="btn g" data-a="notifications" aria-label="Enable event notifications" title="Event notifications">🔔</button><button class="btn g" data-a="copy-prev-day" aria-label="Copy previous day to selected day" title="Copy previous day">⧉</button><button class="btn hidden md:inline-flex" data-a="new" data-k="event">+ Event</button></div>${body}`;}
 
 function hab(){
  const wd=[16,17,18,19,20,21,22],L='MTWTFSS';
@@ -358,6 +409,9 @@ $('#form').addEventListener('submit',e=>{e.preventDefault();const f=new FormData
 function go(v){S.v=v;$('#drawer').classList.add('hidden');render();if(innerWidth>=768){const m={tasks:'#tasks',cal:'#cal',habits:'#hab',more:'.mih,.not'};const el=m[v]&&document.querySelector(m[v]);el?el.scrollIntoView():scrollTo(0,0)}else scrollTo(0,0)}
 document.addEventListener('click',e=>{const el=e.target.closest('[data-a]');if(!el)return;const a=el.dataset.a,id=el.dataset.id;
  if(a==='go')go(el.dataset.v);
+ else if(a==='notifications')enableNotifications();
+ else if(a==='quick-event'){openForm('event');$('#reminderCard').style.display='none'}
+ else if(a==='dismiss-reminder')$('#reminderCard').style.display='none';
  else if(a==='signout'){supabaseClient.auth.signOut();$('#drawer').classList.add('hidden')}
  else if(a==='drawer')$('#drawer').classList.toggle('hidden');
  else if(a==='new'){$('#drawer').classList.add('hidden');openForm(el.dataset.k||(S.v==='cal'?'event':'task'))}
@@ -383,6 +437,7 @@ document.addEventListener('click',e=>{const el=e.target.closest('[data-a]');if(!
  else if(a==='flt'){S.f=el.dataset.f;tasks()}
  else if(a==='mode'){S.mode=el.dataset.m;cal()}
  else if(a==='sel'){S.sel=el.dataset.d;const d=new Date(S.sel+'T00:00');if(d.getMonth()!==S.month.getMonth())S.month=new Date(d.getFullYear(),d.getMonth(),1);cal()}
+ else if(a==='copy-prev-day'){const selected=new Date(S.sel+'T00:00'),previous=new Date(selected);previous.setDate(previous.getDate()-1);const previousDate=iso(previous);const source=S.events.filter(e=>e.date===previousDate);if(!source.length){toast('No events on the previous day');return}const clones=source.map(e=>({...e,id:S.nid++,date:S.sel}));S.events.push(...clones);save();cal();cards();toast(`${clones.length} event${clones.length===1?'':'s'} copied to ${fd(S.sel,{month:'short',day:'numeric'})}`)}
  else if(a==='mo'){S.month=new Date(S.month.getFullYear(),S.month.getMonth()+ +el.dataset.n,1);cal()}
  else if(a==='hab'){const h=S.habits.find(x=>x.id==id),d=+el.dataset.d,i=h.d.indexOf(d);i<0?h.d.push(d):h.d.splice(i,1);save();hab()}
  else if(a==='toggle-home-habit'){const h=S.habits.find(x=>x.id==id);if(h){const d=Number(TODAY.slice(-2)),i=h.d.indexOf(d);i<0?h.d.push(d):h.d.splice(i,1);save();cards();hab();toast(i<0?'Habit completed for today':'Habit marked incomplete')}}
@@ -394,6 +449,8 @@ supabaseClient.auth.onAuthStateChange(async(_event,session)=>{S.user=session?.us
 initAuth();
 normalizeEvents();
 render();
+checkEventReminders();
+setInterval(checkEventReminders,30000);
 </script>
 </body>
 </html>
