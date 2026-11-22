@@ -46,6 +46,8 @@ td{padding:2px 6px;border-top:1px solid var(--line)}
 .hrow{display:grid;grid-template-columns:minmax(0,1fr) repeat(7,26px);gap:4px;align-items:center;min-height:30px}
 .hd{width:22px;height:22px;border-radius:99px;border:1.5px solid #3a4254;background:none;cursor:pointer;padding:0;color:#04210f;font:700 12px Inter}.hd.on{background:var(--ok);border-color:var(--ok)}.hd:disabled{opacity:.4}
 .hm{width:40px;height:40px;border-radius:10px;border:1px solid var(--line);background:none;cursor:pointer;color:#04210f;font-weight:700}.hm.on{background:var(--ok);border-color:var(--ok)}.hm:disabled{opacity:.35}
+.habit-card{border-top:1px solid var(--line);padding:12px 0}.habit-card:first-child{border-top:0}.habit-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}.habit-day{min-height:52px;border:1px solid var(--line);border-radius:10px;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:11px;color:var(--mute);cursor:pointer}.habit-day.on{background:#14532d59;border-color:#22c55e;color:#4ade80}.habit-day i{font-style:normal;font-size:14px;font-weight:700}
+.habit-analysis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:10px 0}.habit-stat{min-width:0;padding:10px 8px;border-radius:10px;background:var(--card2);text-align:center}.habit-stat b{display:block;font-size:20px}.habit-stat span{display:block;color:var(--mute);font-size:11px;margin-top:2px}.habit-progress{height:7px;border-radius:99px;background:var(--line);overflow:hidden}.habit-progress i{display:block;height:100%;border-radius:99px;background:var(--ok)}
 details>summary{list-style:none;cursor:pointer;min-height:44px;display:flex;align-items:center;justify-content:space-between;gap:8px}details>summary::-webkit-details-marker{display:none}
 .hero{position:relative;overflow:hidden;background:linear-gradient(120deg,#0a0c12 30%,#161c2b)}
 .mt{position:absolute;right:0;bottom:0;width:70%;height:100%;opacity:.9}
@@ -58,8 +60,11 @@ label{display:block;font-size:13px;font-weight:600;margin:12px 0 4px}
 .auth-panel{width:min(420px,calc(100% - 32px));padding:24px;border-radius:16px}
 .auth-panel input{margin-bottom:10px}
 @media(max-width:767px){
+ main{width:100%;max-width:100%;min-width:0}
+ main>*{min-width:0}
+ .cards,.tasks,.hab,.mus,.not,.upc{max-width:100%;min-width:0}
  body .sec{display:none}
- body[data-v=home] :is(.hero,.cards,.tasks,.upc),body[data-v=tasks] .tasks,body[data-v=cal] .cal,body[data-v=habits] .hab,body[data-v=more] :is(.mus,.not,.upc,.ban){display:block}
+ body[data-v=home] :is(.hero,.cards,.tasks,.mus,.not,.hab,.upc),body[data-v=tasks] .tasks,body[data-v=cal] .cal,body[data-v=habits] .hab,body[data-v=more] :is(.mus,.not,.upc,.ban){display:block}
  .ban{order:9}
 }
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
@@ -136,8 +141,9 @@ label{display:block;font-size:13px;font-weight:600;margin:12px 0 4px}
 </div>
 
 <script>
-const D=(m,d)=>`2026-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`,TODAY=D(11,21);
+const D=(m,d)=>`2026-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
 const $=s=>document.querySelector(s),esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const _today=new Date(),TODAY=`${_today.getFullYear()}-${String(_today.getMonth()+1).padStart(2,'0')}-${String(_today.getDate()).padStart(2,'0')}`;
 const iso=d=>D(d.getMonth()+1,d.getDate()).replace('2026',d.getFullYear());
 const fd=(s,o)=>new Date(s+'T00:00').toLocaleDateString('en',o||{month:'short',day:'numeric',year:'numeric'});
 const f12=t=>{let[h,m]=t.split(':');const a=h>=12?'PM':'AM';return(h%12||12)+':'+m+' '+a};
@@ -152,6 +158,7 @@ const E0='1|Gym|07:00|g,2|Project Work|10:00|b,4|Study|09:00|p,5|Meeting|11:00|b
 const wk=(n,k)=>{const a=[];for(let d=1;d<=15;d++)if((d*3+k)%4)a.push(d);for(let d=16;d<16+n;d++)a.push(d);return a};
 const S={v:'home',f:'All',mode:'Month',sel:TODAY,month:new Date(2026,10,1),nid:100,play:false,user:null,tk:{},
  tasks:T0,events:E0,habits:[{id:1,n:'Workout',d:wk(6,0)},{id:2,n:'Read',d:wk(5,1)},{id:3,n:'Meditate',d:wk(3,2)},{id:4,n:'No Social Media',d:wk(4,3)},{id:5,n:'Drink Water',d:wk(5,4)}],
+ homeHabitIds:null,
  cardTitles:['Daily','Planners','Personal','Goals'],
  cardItems:[
   ['Today','This Week','Journal'],
@@ -163,13 +170,13 @@ const S={v:'home',f:'All',mode:'Month',sel:TODAY,month:new Date(2026,10,1),nid:1
  music:{title:'Better Days',artist:'NEFFEX',duration:'3:20',elapsed:'1:42'},
  upcoming:[{id:1,t:'Project Deadline',date:'2026-11-22',cat:'Work',c:'b'},{id:2,t:'Doctor Appointment',date:'2026-11-24',cat:'Health',c:'g'},{id:3,t:'Weekend Trip Plan',date:'2026-11-25',cat:'Personal',c:'p'},{id:4,t:'Budget Review',date:'2026-11-28',cat:'Finance',c:'o'}],
  hero:{title:'Life Planner',tagline:'Plan Better  ·  Do More  ·  Live Greater',quote:'A little progress each day adds up to big results.'}};
-try{const s=JSON.parse(localStorage.getItem('lp1')||'null');if(s)Object.assign(S,{tasks:s.tasks,events:s.events,habits:s.habits,nid:s.nid,notes:s.notes,music:s.music,upcoming:s.upcoming,hero:s.hero,cardTitles:s.cardTitles,cardItems:s.cardItems})}catch(e){}
-const save=()=>{const data={tasks:S.tasks,events:S.events,habits:S.habits,nid:S.nid,notes:S.notes,music:S.music,upcoming:S.upcoming,hero:S.hero,cardTitles:S.cardTitles,cardItems:S.cardItems};try{localStorage.setItem('lp1',JSON.stringify(data))}catch(e){}
+try{const s=JSON.parse(localStorage.getItem('lp1')||'null');if(s)Object.assign(S,{tasks:s.tasks,events:s.events,habits:s.habits,homeHabitIds:s.homeHabitIds,nid:s.nid,notes:s.notes,music:s.music,upcoming:s.upcoming,hero:s.hero,cardTitles:s.cardTitles,cardItems:s.cardItems})}catch(e){}
+const save=()=>{const data={tasks:S.tasks,events:S.events,habits:S.habits,homeHabitIds:S.homeHabitIds,nid:S.nid,notes:S.notes,music:S.music,upcoming:S.upcoming,hero:S.hero,cardTitles:S.cardTitles,cardItems:S.cardItems};try{localStorage.setItem('lp1',JSON.stringify(data))}catch(e){}
  clearTimeout(save.remoteTimer);save.remoteTimer=setTimeout(()=>syncRemote(data),500)};
 async function syncRemote(data){if(!S.user)return;const {error}=await supabaseClient.from('life_planners').upsert({user_id:S.user.id,data,updated_at:new Date().toISOString()},{onConflict:'user_id'});if(error)toast('Could not sync: '+error.message)}
 async function loadRemote(){if(!S.user)return;const {data,error}=await supabaseClient.from('life_planners').select('data').eq('user_id',S.user.id).maybeSingle();
  if(error){toast('Could not load planner: '+error.message);return}
- if(data?.data){Object.assign(S,data.data);if(!S.cardTitles)S.cardTitles=['Daily','Planners','Personal','Goals'];if(!S.cardItems)S.cardItems=[['Today','This Week','Journal'],['Yearly Planner','Monthly Planner','Weekly Planner'],['Health & Fitness','Mindset & Growth','Finance'],['Career','Health','Lifestyle']];try{localStorage.setItem('lp1',JSON.stringify(data.data))}catch(e){}}else{syncRemote({tasks:S.tasks,events:S.events,habits:S.habits,nid:S.nid,notes:S.notes,music:S.music,upcoming:S.upcoming,hero:S.hero,cardTitles:S.cardTitles,cardItems:S.cardItems})}render();}
+ if(data?.data){Object.assign(S,data.data);if(!S.cardTitles)S.cardTitles=['Daily','Planners','Personal','Goals'];if(!S.cardItems)S.cardItems=[['Today','This Week','Journal'],['Yearly Planner','Monthly Planner','Weekly Planner'],['Health & Fitness','Mindset & Growth','Finance'],['Career','Health','Lifestyle']];try{localStorage.setItem('lp1',JSON.stringify(data.data))}catch(e){}}else{syncRemote({tasks:S.tasks,events:S.events,habits:S.habits,homeHabitIds:S.homeHabitIds,nid:S.nid,notes:S.notes,music:S.music,upcoming:S.upcoming,hero:S.hero,cardTitles:S.cardTitles,cardItems:S.cardItems})}render();}
 const showAuth=show=>{$('#authOverlay').classList.toggle('hidden',!show);$('#authOverlay').classList.toggle('flex',show)};
 $('#authForm').addEventListener('submit',async e=>{e.preventDefault();const f=new FormData(e.currentTarget),email=f.get('email'),password=f.get('password');const {error}=await supabaseClient.auth.signInWithPassword({email,password});if(error)toast(error.message)});
 $('#authSignUp').addEventListener('click',async()=>{const f=new FormData($('#authForm')),email=f.get('email'),password=f.get('password');if(!email||String(password).length<6){toast('Enter an email and 6-character password');return}const {error}=await supabaseClient.auth.signUp({email,password});toast(error?error.message:'Check your email to confirm the account')});
@@ -177,7 +184,42 @@ const toast=m=>{const t=$('#toast');t.textContent=m;t.style.display='block';clea
 const es=(a,b)=>(a.date+a.time).localeCompare(b.date+b.time);
 
 const CARDS=[['Daily','☀','tasks',['Today','This Week','Journal']],['Planners','▦','cal',['Yearly Planner','Monthly Planner','Weekly Planner']],['Personal','☺','habits',['Health & Fitness','Mindset & Growth','Finance']],['Goals','◎','more',['Career','Health','Lifestyle']]];
-function cards(){$('#cards').innerHTML=CARDS.map(([n,i,v],index)=>`<div class="card p-3 md:p-4"><div class="flex items-center gap-2 min-h-[44px]"><button class="flex items-center gap-2 flex-1 min-h-[44px] bg-transparent border-0 cursor-pointer text-left" data-a="go" data-v="${v}"><span class="ico">${i}</span><b class="text-[15px]">${esc(S.cardTitles[index]||n)}</b></button><button class="btn g" data-a="edit-card" data-index="${index}" aria-label="Edit ${esc(S.cardTitles[index]||n)}">✎</button></div>${(S.cardItems[index]||[]).map((x,itemIndex)=>`<div class="flex items-center gap-1"><button class="flex items-center gap-2 flex-1 min-h-[40px] bg-transparent border-0 cursor-pointer mute text-left text-[13px]" data-a="tk" data-k="${esc(x)}"><span class="chk" style="width:20px;height:20px"><i style="width:16px;height:16px;${S.tk[x]?'background:var(--ok);border-color:var(--ok)':''}">${S.tk[x]?'✓':''}</i></span>${esc(x)}</button><button class="btn g" data-a="edit-card-item" data-card="${index}" data-item="${itemIndex}" aria-label="Edit ${esc(x)}">✎</button></div>`).join('')}</div>`).join('')}
+function getUpcomingPlans(){
+ const today=S.upcoming.filter(p=>p.date===TODAY).sort((a,b)=>a.t.localeCompare(b.t));
+ const overdue=S.upcoming.filter(p=>p.date<TODAY).sort((a,b)=>b.date.localeCompare(a.date)||a.t.localeCompare(b.t));
+ const future=S.upcoming.filter(p=>p.date>TODAY).sort((a,b)=>a.date.localeCompare(b.date)||a.t.localeCompare(b.t));
+ return [...today,...overdue,...future];
+}
+function cards(){
+ const priority={High:0,Medium:1,Low:2};
+ const taskPriority=(a,b)=>(priority[a.pri]??3)-(priority[b.pri]??3)||a.due.localeCompare(b.due)||a.t.localeCompare(b.t);
+ const todayTasks=S.tasks.filter(t=>t.st!=='Done'&&t.due===TODAY).sort(taskPriority);
+ const overdueTasks=S.tasks.filter(t=>t.st!=='Done'&&t.due<TODAY&&!todayTasks.includes(t)).sort(taskPriority);
+ const upcomingTasks=S.tasks.filter(t=>t.st!=='Done'&&t.due>TODAY&&!todayTasks.includes(t)).sort((a,b)=>a.due.localeCompare(b.due)||(priority[a.pri]??3)-(priority[b.pri]??3)||a.t.localeCompare(b.t));
+ const topTasks=[...todayTasks,...overdueTasks,...upcomingTasks].slice(0,3);
+ let topHabits=[];
+ if(Array.isArray(S.homeHabitIds)){
+  topHabits=S.homeHabitIds.map(id=>S.habits.find(h=>h.id==id)).filter(Boolean).slice(0,3);
+ }
+ if(!topHabits.length)topHabits=[...S.habits].sort((a,b)=>b.d.length-a.d.length||a.n.localeCompare(b.n)).slice(0,3);
+ const nextPlans=getUpcomingPlans().slice(0,3);
+ const items=[
+  topTasks.map(t=>({name:t.t,key:'task:'+t.id,done:t.st==='Done',kind:'task',id:t.id,meta:t.pri+(t.due<TODAY?' · Overdue':t.due>TODAY?' · '+fd(t.due,{month:'short',day:'numeric'}):'')})),
+  nextPlans.map(p=>({name:p.t,key:'plan:'+p.id,done:false,kind:'plan',id:p.id,meta:fd(p.date,{month:'short',day:'numeric'})+(p.date<TODAY?' · Overdue':'')})),
+  topHabits.map(h=>({name:h.n,key:'habit:'+h.id,done:h.d.includes(Number(TODAY.slice(-2))),kind:'habit',id:h.id,meta:h.d.length+' days'})),
+  (S.cardItems[3]||[]).map((x,itemIndex)=>({name:x,key:'goal:'+itemIndex,done:!!S.tk[x],kind:'goal',id:itemIndex,meta:''}))
+ ];
+ $('#cards').innerHTML=CARDS.map(([n,i,v],index)=>{
+  const list=items[index];
+   const rows=list.map((x,itemIndex)=>{
+    if(x.kind==='habit'){
+     return `<div class="flex items-center gap-1"><button class="chk" style="width:36px;height:40px" data-a="toggle-home-habit" data-id="${x.id}" aria-label="${x.done?'Mark incomplete':'Mark complete'}: ${esc(x.name)}"><i style="width:16px;height:16px;${x.done?'background:var(--ok);border-color:var(--ok)':''}">${x.done?'✓':''}</i></button><button class="flex items-center gap-2 flex-1 min-w-0 min-h-[40px] bg-transparent border-0 cursor-pointer mute text-left text-[13px]" data-a="go" data-v="habits"><span class="min-w-0 flex-1"><span class="block truncate">${esc(x.name)}</span>${x.meta?`<small class="block text-[10px] opacity-75">${esc(x.meta)}</small>`:''}</span></button></div>`;
+    }
+    return `<div class="flex items-center gap-1"><button class="flex items-center gap-2 flex-1 min-w-0 min-h-[40px] bg-transparent border-0 cursor-pointer mute text-left text-[13px]" ${x.kind==='task'?`data-a="tog" data-id="${x.id}"`:x.kind==='plan'?`data-a="edit-upcoming" data-id="${x.id}"`:`data-a="tk" data-k="${esc(x.name)}"`}><span class="chk" style="width:20px;height:20px"><i style="width:16px;height:16px;${x.done?'background:var(--ok);border-color:var(--ok)':''}">${x.done?'✓':''}</i></span><span class="min-w-0 flex-1"><span class="block truncate">${esc(x.name)}</span>${x.meta?`<small class="block text-[10px] opacity-75">${esc(x.meta)}</small>`:''}</span></button>${x.kind==='goal'?`<button class="btn g" data-a="edit-card-item" data-card="${index}" data-item="${itemIndex}" aria-label="Edit ${esc(x.name)}">✎</button>`:''}</div>`;
+   }).join('');
+  return `<div class="card p-3 md:p-4"><div class="flex items-center gap-2 min-h-[44px]"><button class="flex items-center gap-2 flex-1 min-w-0 min-h-[44px] bg-transparent border-0 cursor-pointer text-left" data-a="go" data-v="${v}"><span class="ico">${i}</span><b class="text-[15px] truncate">${esc(S.cardTitles[index]||n)}</b></button><button class="btn g" data-a="edit-card" data-index="${index}" aria-label="Edit ${esc(S.cardTitles[index]||n)}">✎</button></div>${rows||'<p class="mute text-xs py-2">Nothing to show.</p>'}</div>`;
+ }).join('');
+}
 
 const tCard=t=>`<div class="card flex items-center pr-1 ${t.st==='Done'?'done':''}" style="background:var(--card2)"><button class="chk ${t.st==='Done'?'on':''}" data-a="tog" data-id="${t.id}" aria-label="Mark done"><i>${t.st==='Done'?'✓':''}</i></button><div class="flex-1 min-w-0 py-2"><div class="tt font-semibold break-words">${esc(t.t)}</div><div class="flex flex-wrap gap-1.5 mt-1 items-center"><span class="chip c-${CC[t.cat]}">${t.cat}</span><span class="chip c-${t.pri}">${t.pri}</span><span class="text-xs mute">${fd(t.due,{month:'short',day:'numeric'})}</span></div></div><button class="btn g" data-a="edit" data-id="${t.id}" aria-label="Edit">✎</button><button class="btn g d" data-a="del" data-id="${t.id}" aria-label="Delete">🗑</button></div>`;
 const tRow=t=>`<tr class="${t.st==='Done'?'done':''}"><td style="width:48px"><button class="chk ${t.st==='Done'?'on':''}" data-a="tog" data-id="${t.id}" aria-label="Mark done"><i>${t.st==='Done'?'✓':''}</i></button></td><td class="tt font-medium">${esc(t.t)}</td><td><span class="chip c-${CC[t.cat]}">${t.cat}</span></td><td><span class="chip c-${t.pri}">${t.pri}</span></td><td><span class="chip c-${SC[t.st]}">${t.st}</span></td><td class="mute whitespace-nowrap">${fd(t.due)}</td><td class="whitespace-nowrap text-right"><button class="btn g" data-a="edit" data-id="${t.id}" aria-label="Edit">✎</button><button class="btn g d" data-a="del" data-id="${t.id}" aria-label="Delete">🗑</button></td></tr>`;
@@ -204,13 +246,19 @@ function cal(){
 
 function hab(){
  const wd=[16,17,18,19,20,21,22],L='MTWTFSS';
- const wkr=`<div class="hidden md:block"><div class="hrow mute text-xs"><span></span>${[...L].map(x=>`<span class="text-center">${x}</span>`).join('')}</div>${S.habits.map(h=>`<div class="hrow"><button class="text-left truncate text-[13px] bg-transparent border-0 cursor-pointer" data-a="edit-habit" data-id="${h.id}" title="Edit habit">${esc(h.n)} ✎</button>${wd.map(d=>`<button class="hd ${h.d.includes(d)?'on':''}" ${d>21?'disabled':''} data-a="hab" data-id="${h.id}" data-d="${d}" aria-label="${esc(h.n)}, Nov ${d}">${h.d.includes(d)?'✓':''}</button>`).join('')}</div>`).join('')}</div>`;
- const days=Array.from({length:30},(_,i)=>i+1);
- const mg=`<div class="md:hidden overflow-x-auto"><table style="border-spacing:4px;border-collapse:separate;width:auto"><thead><tr><th class="sticky left-0 z-10" style="background:var(--card);min-width:112px">Habit</th>${days.map(d=>`<th class="text-center ${d===21?'':'mute'}">${d}</th>`).join('')}</tr></thead><tbody>${S.habits.map(h=>`<tr><td class="sticky left-0 z-10 font-semibold text-[13px]" style="background:var(--card);border:0"><button class="bg-transparent border-0 text-left cursor-pointer" data-a="edit-habit" data-id="${h.id}">${esc(h.n)} ✎</button></td>${days.map(d=>`<td style="border:0;padding:0"><button class="hm ${h.d.includes(d)?'on':''}" ${d>21?'disabled':''} data-a="hab" data-id="${h.id}" data-d="${d}" aria-label="${esc(h.n)}, Nov ${d}">${h.d.includes(d)?'✓':''}</button></td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
- $('#hab').innerHTML=`<div class="flex items-center justify-between mb-2"><h3 class="font-semibold flex items-center gap-2"><span class="ico" style="background:#14532d;color:#4ade80">✓</span>Habit Tracker</h3><button class="btn g" data-a="new-habit" aria-label="Add habit">+</button></div><div class="mute text-xs mb-2">November 2026${'' }</div>${wkr}${mg}`;}
+ const streak=h=>{const ds=[...h.d].sort((a,b)=>a-b);let best=0,run=0,last=null;ds.forEach(d=>{run=(last!==null&&d===last+1)?run+1:1;best=Math.max(best,run);last=d});return best};
+ const total=S.habits.reduce((n,h)=>n+h.d.length,0);
+ const possible=S.habits.length*30;
+ const rate=possible?Math.round(total/possible*100):0;
+ const ranked=S.habits.map(h=>({h,score:h.d.length,streak:streak(h)})).sort((a,b)=>b.score-a.score);
+ const best=ranked[0];
+ const wkr=`<div class="hidden md:block"><div class="hrow mute text-xs"><span></span>${[...L].map(x=>`<span class="text-center">${x}</span>`).join('')}</div>${S.habits.map(h=>`<div class="hrow"><div class="flex items-center gap-1 min-w-0"><button class="text-left truncate text-[13px] bg-transparent border-0 cursor-pointer flex-1" data-a="edit-habit" data-id="${h.id}" title="Edit habit">${esc(h.n)} ✎</button><button class="btn g d" style="min-width:44px" data-a="del-habit" data-id="${h.id}" aria-label="Remove ${esc(h.n)}">🗑</button></div>${wd.map(d=>`<button class="hd ${h.d.includes(d)?'on':''}" data-a="hab" data-id="${h.id}" data-d="${d}" aria-label="${esc(h.n)}, Nov ${d}">${h.d.includes(d)?'✓':''}</button>`).join('')}</div>`).join('')}</div>`;
+ const mg=`<div class="md:hidden">${S.habits.map(h=>`<div class="habit-card"><div class="flex items-center gap-2 mb-2"><button class="text-left flex-1 min-w-0 bg-transparent border-0 font-semibold cursor-pointer" data-a="edit-habit" data-id="${h.id}">${esc(h.n)}</button><span class="chip">${h.d.length} / 30 days</span><button class="btn g d" data-a="del-habit" data-id="${h.id}" aria-label="Remove ${esc(h.n)}">🗑</button></div><div class="habit-days">${wd.map(d=>`<button class="habit-day ${h.d.includes(d)?'on':''}" data-a="hab" data-id="${h.id}" data-d="${d}" aria-label="${esc(h.n)}, Nov ${d}"><span>${L[wd.indexOf(d)]}</span><i>${h.d.includes(d)?'✓':d}</i></button>`).join('')}</div></div>`).join('')||'<p class="mute py-3">No habits yet. Add one to begin tracking.</p>'}</div>`;
+ const analysis=`<details open class="mt-3 rounded-xl p-3" style="background:var(--card2)"><summary><h4 class="font-semibold">Habit Analysis</h4><span class="mute">▾</span></summary><div class="habit-analysis"><div class="habit-stat"><b>${rate}%</b><span>Completion</span></div><div class="habit-stat"><b>${best?best.streak:0}</b><span>Best streak</span></div><div class="habit-stat"><b class="truncate">${best?esc(best.h.n):'—'}</b><span>Top habit</span></div></div><div class="habit-progress" aria-label="${rate}% completed"><i style="width:${rate}%"></i></div></details>`;
+ $('#hab').innerHTML=`<div class="flex items-center justify-between mb-2"><h3 class="font-semibold flex items-center gap-2"><span class="ico" style="background:#14532d;color:#4ade80">✓</span>Habit Tracker</h3><button class="btn g" data-a="new-habit" aria-label="Add habit">+</button></div><div class="mute text-xs mb-2">November 16–22, 2026</div>${wkr}${mg}${analysis}`;}
 
 function upcoming(){const el=$('#upc');if(!el)return;
- el.innerHTML=`<div class="flex justify-end -mt-10 mb-2"><button class="btn g" data-a="new-upcoming" aria-label="Add upcoming item">+</button></div>`+S.upcoming.map(u=>`<div class="flex items-center gap-3 py-2 c-${u.c} border-t" style="border-color:var(--line)"><span class="dt" style="width:11px;height:11px"></span><div class="flex-1 min-w-0"><button class="text-left bg-transparent border-0 cursor-pointer p-0" data-a="edit-upcoming" data-id="${u.id}"><div class="font-medium">${esc(u.t)} ✎</div><div class="text-xs mute">${fd(u.date,{month:'short',day:'numeric',year:'numeric'})}</div></button></div><span class="chip">${esc(u.cat)}</span></div>`).join('');}
+ el.innerHTML=`<div class="flex justify-end -mt-10 mb-2"><button class="btn g" data-a="new-upcoming" aria-label="Add upcoming item">+</button></div>`+S.upcoming.map(u=>`<div class="flex items-center gap-3 py-2 c-${u.c} border-t" style="border-color:var(--line)"><span class="dt" style="width:11px;height:11px"></span><div class="flex-1 min-w-0"><button class="text-left bg-transparent border-0 cursor-pointer p-0" data-a="edit-upcoming" data-id="${u.id}"><div class="font-medium">${esc(u.t)} ✎</div><div class="text-xs mute">${fd(u.date,{month:'short',day:'numeric',year:'numeric'})}</div></button></div><span class="chip">${esc(u.cat)}</span><button class="btn g d" data-a="del-upcoming" data-id="${u.id}" aria-label="Remove ${esc(u.t)}">🗑</button></div>`).join('')||'<p class="mute py-3">No upcoming plans.</p>';}
 
 function render(){
  document.body.dataset.v=S.v;$('#ttl').textContent=TT[S.v];
@@ -236,12 +284,18 @@ function openForm(k,id){
  else if(k==='music'){title='Edit now playing';f=`<label for="f1">Track title</label><input id="f1" name="title" value="${esc(S.music.title)}"><label>Artist</label><input name="artist" value="${esc(S.music.artist)}"><div class="grid grid-cols-2 gap-3"><div><label>Elapsed</label><input name="elapsed" value="${esc(S.music.elapsed)}"></div><div><label>Duration</label><input name="duration" value="${esc(S.music.duration)}"></div></div>`;}
  else if(k==='hero'){title='Edit hero';f=`<label for="f1">Title</label><input id="f1" name="title" value="${esc(S.hero.title)}"><label>Tagline</label><input name="tagline" value="${esc(S.hero.tagline)}"><label>Quote</label><input name="quote" value="${esc(S.hero.quote)}">`;}
  else if(k==='upcoming'){title=u?'Edit upcoming item':'New upcoming item';f=`<label for="f1">Title</label><input id="f1" name="t" value="${u?esc(u.t):''}" autocomplete="off"><div class="grid grid-cols-2 gap-3"><div><label>Date</label><input type="date" name="d" value="${u?u.date:TODAY}"></div><div><label>Category</label><select name="cat">${o(['Work','Health','Personal','Finance','Study'],u?u.cat:'Personal')}</select></div></div>`;}
- else if(k==='card'){const index=+id,titleValue=S.cardTitles[index]||CARDS[index][0];title='Edit section title';f=`<label for="f1">Section title</label><input id="f1" name="title" value="${esc(titleValue)}" autocomplete="off">`;}
+ else if(k==='card'){const index=+id,titleValue=S.cardTitles[index]||CARDS[index][0];title=index===2?'Choose habits':'Edit section title';f=`<label for="f1">Section title</label><input id="f1" name="title" value="${esc(titleValue)}" autocomplete="off">${index===2?`<label>Habits shown on Home (choose up to 3)</label><div class="grid gap-2">${S.habits.map(h=>`<label class="flex items-center gap-3 p-2 rounded-lg m-0" style="background:var(--card2);font-weight:500"><input type="checkbox" name="homeHabit" value="${h.id}" ${S.homeHabitIds?.includes(h.id)?'checked':''} style="width:20px;min-height:20px;margin:0"><span>${esc(h.n)}</span></label>`).join('')||'<p class="mute">No habits available.</p>'}</div>`:''}`;}
  else if(k==='card-item'){const [cardIndex,itemIndex]=String(id).split(':').map(Number);const itemValue=S.cardItems[cardIndex]?.[itemIndex]||'';title='Edit card item';f=`<label for="f1">Item name</label><input id="f1" name="title" value="${esc(itemValue)}" autocomplete="off">`;}
  f=`<h2 class="text-xl font-bold mb-1">${title}</h2><input type="hidden" name="k" value="${k}"><input type="hidden" name="id" value="${id||''}">`+f;
- f+=`<div class="flex gap-2 mt-5"><button type="button" class="btn flex-1" data-a="close">Cancel</button><button class="btn p flex-1">Save</button></div>`;
+ f+=`<div class="flex gap-2 mt-5"><button type="button" class="btn flex-1" data-a="close">Cancel</button>${k==='habit'&&h?'<button type="button" class="btn d" data-a="del-habit" data-id="'+h.id+'">Remove</button>':''}${k==='upcoming'&&u?'<button type="button" class="btn d" data-a="del-upcoming" data-id="'+u.id+'">Remove</button>':''}<button class="btn p flex-1">Save</button></div>`;
  $('#form').innerHTML=f;$('#modal').classList.replace('hidden','flex');setTimeout(()=>$('#f1').focus(),60);}
 const closeM=()=>$('#modal').classList.replace('flex','hidden');
+$('#form').addEventListener('change',e=>{
+ if(e.target.name==='homeHabit'){
+  const checked=[...$('#form').querySelectorAll('input[name="homeHabit"]:checked')];
+  if(checked.length>3){e.target.checked=false;toast('Choose no more than 3 habits')}
+ }
+});
 $('#form').addEventListener('submit',e=>{e.preventDefault();const f=new FormData(e.target),k=f.get('k'),id=f.get('id');
  if(k==='task'){const t=(f.get('t')||'').trim();if(!t){toast('Enter a title first');$('#f1').focus();return}const o={t,cat:f.get('cat'),pri:f.get('pri'),st:f.get('st'),due:f.get('d')||TODAY};id?Object.assign(S.tasks.find(x=>x.id==id),o):S.tasks.push({id:S.nid++,...o});toast('Task saved')}
  else if(k==='event'){const t=(f.get('t')||'').trim();if(!t){toast('Enter a title first');$('#f1').focus();return}const o={t,date:f.get('d')||S.sel,time:f.get('time')||'09:00',c:f.get('c')};id?Object.assign(S.events.find(x=>x.id==id),o):S.events.push({id:S.nid++,...o});toast('Event saved')}
@@ -250,7 +304,7 @@ $('#form').addEventListener('submit',e=>{e.preventDefault();const f=new FormData
  else if(k==='music'){S.music={title:(f.get('title')||'').trim()||'Untitled',artist:(f.get('artist')||'').trim()||'Unknown artist',elapsed:(f.get('elapsed')||'').trim()||'0:00',duration:(f.get('duration')||'').trim()||'0:00'};toast('Music saved')}
  else if(k==='hero'){S.hero={title:(f.get('title')||'').trim()||'Life Planner',tagline:(f.get('tagline')||'').trim(),quote:(f.get('quote')||'').trim()};toast('Hero saved')}
  else if(k==='upcoming'){const t=(f.get('t')||'').trim();if(!t){toast('Enter a title first');$('#f1').focus();return}const cat=f.get('cat'),colors={Work:'b',Health:'g',Personal:'p',Finance:'o',Study:'t'},o={t,date:f.get('d')||TODAY,cat,c:colors[cat]||'p'};if(id)Object.assign(S.upcoming.find(x=>x.id==id),o);else S.upcoming.push({id:S.nid++,...o});toast('Upcoming item saved')}
- else if(k==='card'){const title=(f.get('title')||'').trim();if(!title){toast('Enter a section title');$('#f1').focus();return}S.cardTitles[+id]=title;toast('Section title saved')}
+ else if(k==='card'){const title=(f.get('title')||'').trim();if(!title){toast('Enter a section title');$('#f1').focus();return}const index=+id;S.cardTitles[index]=title;if(index===2){const selected=f.getAll('homeHabit').map(Number);if(selected.length>3){toast('Choose no more than 3 habits');return}S.homeHabitIds=selected.length?selected:null}toast(index===2?'Home habits saved':'Section title saved')}
  else if(k==='card-item'){const title=(f.get('title')||'').trim();if(!title){toast('Enter an item name');$('#f1').focus();return}const [cardIndex,itemIndex]=String(id).split(':').map(Number);S.cardItems[cardIndex][itemIndex]=title;toast('Card item saved')}
  save();closeM();render();});
 
@@ -264,15 +318,17 @@ document.addEventListener('click',e=>{const el=e.target.closest('[data-a]');if(!
  else if(a==='edit-event')openForm('event',id);
  else if(a==='edit-habit')openForm('habit',id);
  else if(a==='new-habit')openForm('habit');
+ else if(a==='del-habit'){const h=S.habits.find(x=>x.id==id);if(h&&confirm(`Remove "${h.n}"?`)){S.habits=S.habits.filter(x=>x.id!=id);if(Array.isArray(S.homeHabitIds))S.homeHabitIds=S.homeHabitIds.filter(hid=>hid!=id);save();closeM();toast('Habit removed');hab();cards()}}
  else if(a==='edit-notes')openForm('notes');
  else if(a==='edit-music')openForm('music');
  else if(a==='edit-hero')openForm('hero');
  else if(a==='edit-upcoming')openForm('upcoming',id);
  else if(a==='new-upcoming')openForm('upcoming');
+ else if(a==='del-upcoming'){const u=S.upcoming.find(x=>x.id==id);if(u&&confirm(`Remove "${u.t}"?`)){S.upcoming=S.upcoming.filter(x=>x.id!=id);save();toast('Upcoming item removed');render()}}
  else if(a==='edit-card')openForm('card',el.dataset.index);
  else if(a==='edit-card-item')openForm('card-item',el.dataset.card+':'+el.dataset.item);
  else if(a==='close')closeM();
- else if(a==='tog'){const t=S.tasks.find(x=>x.id==id);t.st=t.st==='Done'?'Not Started':'Done';save();tasks()}
+ else if(a==='tog'){const t=S.tasks.find(x=>x.id==id);t.st=t.st==='Done'?'Not Started':'Done';save();tasks();cards()}
  else if(a==='del'){S.tasks=S.tasks.filter(x=>x.id!=id);save();toast('Task deleted');tasks()}
  else if(a==='dev'){S.events=S.events.filter(x=>x.id!=id);save();toast('Event deleted');cal()}
  else if(a==='flt'){S.f=el.dataset.f;tasks()}
@@ -280,6 +336,7 @@ document.addEventListener('click',e=>{const el=e.target.closest('[data-a]');if(!
  else if(a==='sel'){S.sel=el.dataset.d;const d=new Date(S.sel+'T00:00');if(d.getMonth()!==S.month.getMonth())S.month=new Date(d.getFullYear(),d.getMonth(),1);cal()}
  else if(a==='mo'){S.month=new Date(S.month.getFullYear(),S.month.getMonth()+ +el.dataset.n,1);cal()}
  else if(a==='hab'){const h=S.habits.find(x=>x.id==id),d=+el.dataset.d,i=h.d.indexOf(d);i<0?h.d.push(d):h.d.splice(i,1);save();hab()}
+ else if(a==='toggle-home-habit'){const h=S.habits.find(x=>x.id==id);if(h){const d=Number(TODAY.slice(-2)),i=h.d.indexOf(d);i<0?h.d.push(d):h.d.splice(i,1);save();cards();hab();toast(i<0?'Habit completed for today':'Habit marked incomplete')}}
  else if(a==='tk'){S.tk[el.dataset.k]=!S.tk[el.dataset.k];cards()}});
 $('#play').addEventListener('click',e=>{S.play=!S.play;e.currentTarget.textContent=S.play?'❚❚':'▶'});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeM();$('#drawer').classList.add('hidden')}if((e.key==='Enter'||e.key===' ')&&e.target.matches('a[data-a]')){e.preventDefault();e.target.click()}});
