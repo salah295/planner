@@ -1,0 +1,9 @@
+{
+  "name": "Life Planner",
+  "short_name": "Planner",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#080a0f",
+  "theme_color": "#080a0f",
+  "description": "A personal task and event planner"
+}
